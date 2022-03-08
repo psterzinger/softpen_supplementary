@@ -61,6 +61,7 @@ for(i in 1:3){
 }
 simul_list <- do.call(rbind,simul_list)
 
+#saveRDS(simul_list,"../Data/Simulation_1.Rds")
 saveRDS(simul_list,"/Users/Philipp/Repositories/softpen/Data/Simulation_1.Rds")
 
 library(patchwork)
@@ -68,6 +69,7 @@ library(ggplot2)
 library(grid)
 library(xtable)
 
+#simul_data <- readRDS("../Data/Simulation_1.Rds")
 simul_data <- readRDS("/Users/Philipp/Repositories/softpen/Data/Simulation_1.Rds")
 
 xlab = expression(lambda)
@@ -77,6 +79,7 @@ ylims=c(-20,20)
 
 bp <-  boxplot_simul(simul_data,truelab = truelab,par_ind = 3,ylims=ylims)
 
+#pdf("../LaTeX/Figures/sim1.pdf",height=8.27,width=11.69) 
 pdf("/Users/Philipp/Repositories/softpen/LaTeX/Paper/Figures/sim1.pdf",height=8.27,width=11.69) 
 bp 
 grid.draw(textGrob(ylab, x = .02, rot = 90)) 

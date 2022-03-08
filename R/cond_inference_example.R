@@ -10,6 +10,8 @@ library(scales)
 library(cowplot)
 library(dplyr)
 library(doMC)
+
+#d.binom <- read.table("../Data/d.binom.csv")
 d.binom <- read.table("http://pastebin.com/raw.php?i=0yDpEri8") 
 
 
@@ -80,8 +82,14 @@ for(i in 1:p){
 re_names_p <- re_names_plot(q)
 mathpar <- c(fe_names,re_names_p)
 simul <-  perform_experiment(truth=truth,data=data,nsimu=1000,seed=0,mathpar = mathpar)
+
+#saveRDS(simul,"../Data/cond_inf_sim1000.Rds")
+#simul_data <- readRDS("../Data/cond_inf_sim1000.Rds")
+
 saveRDS(simul,"/Users/Philipp/Repositories/softpen/Data/Logic/cond_inf_sim1000.Rds")
 simul_data <- readRDS("/Users/Philipp/Repositories/softpen/Data/Logic/cond_inf_sim1000.Rds")
+
+
 sim <- simul_data
 sim$mathpar <- c(fe_names,re_names(q)) 
 
