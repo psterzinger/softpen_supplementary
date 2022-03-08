@@ -1,0 +1,14 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Bernoulli-response generalized linear mixed models}{}% 2
+\BOOKMARK [1][-]{section.3}{Motivating example}{}% 3
+\BOOKMARK [1][-]{section.4}{Penalized likelihoods}{}% 4
+\BOOKMARK [2][-]{subsection.4.1}{Setup}{section.4}% 5
+\BOOKMARK [2][-]{subsection.4.2}{Interior point parameter estimates}{section.4}% 6
+\BOOKMARK [2][-]{subsection.4.3}{Invariance under scaled linear transformations}{section.4}% 7
+\BOOKMARK [2][-]{subsection.4.4}{Asymptotic properties}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.5}{Soft penalization}{section.4}% 9
+\BOOKMARK [1][-]{section.5}{Softly-penalized likelihood for Bernoulli-response GLMMs}{}% 10
+\BOOKMARK [2][-]{subsection.5.1}{Fixed effects penalty}{section.5}% 11
+\BOOKMARK [2][-]{subsection.5.2}{Variance components penalty}{section.5}% 12
+\BOOKMARK [1][-]{section.6}{Example: conditional inference data}{}% 13
+\BOOKMARK [1][-]{section.7}{Discussion}{}% 14

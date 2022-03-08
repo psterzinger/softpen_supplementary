@@ -1,0 +1,54 @@
+This is BibTeX, Version 0.99d (TeX Live 2016)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: softpen.aux
+The style file: chicago.bst
+Database file #1: softpen.bib
+Warning--empty organization in schumacher2021detect
+Warning--there's a number but no series in mccullagh+nelder:1989
+Warning--page numbers missing in nash+varadhan:2011
+Warning--empty organization in glmmsr
+Warning--no number and no volume in stringer2022fitting
+Warning--page numbers missing in stringer2022fitting
+Warning--no number and no volume in zhao2006general
+You've used 37 entries,
+            2861 wiz_defined-function locations,
+            847 strings with 11297 characters,
+and the built_in function-call counts, 25556 in all, are:
+= -- 2136
+> -- 1917
+< -- 2
++ -- 579
+- -- 675
+* -- 2316
+:= -- 4722
+add.period$ -- 115
+call.type$ -- 37
+change.case$ -- 260
+chr.to.int$ -- 37
+cite$ -- 44
+duplicate$ -- 660
+empty$ -- 1504
+format.name$ -- 775
+if$ -- 4669
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 37
+newline$ -- 189
+num.names$ -- 372
+pop$ -- 177
+preamble$ -- 1
+purify$ -- 491
+quote$ -- 0
+skip$ -- 727
+stack$ -- 0
+substring$ -- 1323
+swap$ -- 220
+text.length$ -- 2
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 690
+warning$ -- 7
+while$ -- 378
+width$ -- 0
+write$ -- 493
+(There were 7 warnings)
