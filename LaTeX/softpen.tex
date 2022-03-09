@@ -125,16 +125,16 @@
   likelihood estimation in Bernoulli-response generalized linear mixed
   models, which is known to have a positive probability to result in
   estimates on the boundary of the parameter space. Such estimates, instances of which
-  are infinite values for fixed effects parameters and singular or
+  are infinite values for fixed effects and singular or
   infinite variance components, can cause havoc to numerical
   estimation procedures and inference. We introduce an additive penalty to the log-likelihood function, 
   which consists of appropriately scaled versions of the Jeffreys
-  prior for the model with no random effects, and the negative Huber loss. The resulting maximum softly-penalized likelihood
-  estimates are guaranteed to be in the interior of the parameter
+  prior for the model with no random effects and the negative Huber loss. The resulting maximum softly-penalized likelihood
+  estimates are shown to lie in the interior of the parameter
   space. Appropriate scaling of the penalty guarantees that the penalization is soft-enough to recover
   the optimal asymptotic properties expected by the maximum likelihood
   estimator, namely consistency, asymptotic normality,
-  Cram\'{e}r-Rao efficiency and asymptotically valid hypothesis testing. Further, our choice of penalties and scaling factor preserves invariance of the fixed effects parameter estimates under linear transformation of the model
+  Cram\'{e}r-Rao efficiency and asymptotically valid hypothesis testing. Further, our choice of penalties and scaling factor preserves invariance of the fixed effects estimates under linear transformation of the model
   parameters, such as contrasts. Maximum softly-penalized likelihood
   is compared to competing approaches on two real-data examples,
   and comprehensive simulation studies that illustrate its superior finite sample
@@ -149,7 +149,7 @@
 Generalized Linear Mixed Models (GLMMs; \citealt[Chapter
 7]{mcculloch+etal:2008}) are a potent class of statistical models
 that allow associating Gaussian and non-Gaussian responses, such as
-counts, proportions, positive responses, and so on, with covariates
+counts, proportions, positive responses, and so on, with covariates,
 while accounting for complex multivariate dependencies. This is achieved by linking
 the expectation of a response to a linear combination of covariates
 and parameters (fixed effects), and sources of extra variation (random
@@ -192,7 +192,7 @@ generally, singular estimates of the variance-covariance matrix; see
 addition, as is the case in maximum likelihood estimation of
 Bernoulli-response generalized linear models \citep[GLMs; see, for
 example][Chapter 4]{mccullagh+nelder:1989}, the MAL estimates of the
-fixed effects parameters can be
+fixed effects can be
 infinite. As is well-acknowledged in the GLMM literature \citep[see,
 for example][]{bolker+etal:2009, bolker:2018,
   pasch+etal:2013}, both instances of boundary estimates can
@@ -214,7 +214,7 @@ procedure for Bernoulli-response GLMMs that returns estimators that
 are guaranteed to take values in the interior of the parameter space,
 and are also consistent, asymptotically normal, Cram\'{e}r-Rao
 efficient and give asymptotically valid inference, under no additional assumptions beyond those typically
-employed for establishing consistency and asymptotic normality of MAL
+required for establishing consistency, asymptotic normality, and asymptotically valid inference of MAL
 or ML estimators. Although the developments here are for
 Bernoulli-response GLMMs, they provide a blueprint for the
 construction of penalties and estimators with values in the interior
@@ -235,7 +235,7 @@ estimates. Both i) and ii) are in contrast to other penalization
 procedures that have been proposed in the literature \citep[see, for
 example,][]{chung+etal:2013, chung+etal:2015} \IK{add citations}. Maximum
 softly-penalized likelihood is compared to prominent competing
-approaches through two real-data examples, and
+approaches through two real-data examples, and comprehensive
 simulation studies that illustrate its superior finite-sample
 performance. \PS{we only compare to MAL and bglmer, does this warrant this formulation?}
 
@@ -244,7 +244,7 @@ Bernoulli-response GLMM and Section \ref{sec:culcita_dat} gives a motivating rea
 degenerate maximum approximate likelihood estimates in a Bernoulli-response GLMM. Section
 \ref{sec:softpen} formalizes the maximum softly penalized approximate likelihood framework and
 states the large sample results of the softly penalized maximum
-likelihood estimator. Section \ref{sec:ci} demonstrates the performance of the MSPAL on another real-data example and a data-based simulation and Section \ref{sec:sum} provides concluding remarks. Proofs, details on the simulations in this paper and further simulations on synthetic data, that are aimed at provoking particular degenerate MAL estimates, are given in the supplementary material. 
+likelihood estimator. Section \ref{sec:ci} demonstrates the performance of the MSPAL on another real-data example and a data-based simulation and Section \ref{sec:sum} provides concluding remarks. Proofs, details on the simulations in this paper and further simulations on synthetic data are given in the supplementary material. 
 
 \section{Bernoulli-response generalized linear mixed models}
 \label{sec:bern_GLMMs}
@@ -273,7 +273,7 @@ where $\mu_{ij} = P(Y_{ij} = 1 \mid \bu_i, \bx_{ij}, \bz_{ij})$, and
 $g: (0, 1) \to \Re$ is a known monotone increasing link function, like
 the logistic, probit or complementary log-log. The vector $\bx_{ij}$
 is the $j$th row of the $n_i \times p$ model matrix $\bX_{i}$
-associated with the $p$-vector of fixed effect parameters
+associated with the $p$-vector of fixed effects
 $\bbeta \in \Re^p$, and $\bz_{ij}$ is the $j$th row of the
 $n_i \times q$ model matrix $\bZ_{i}$ associated with the $q$-vector
 of random effects $\bu_i$. The model matrices $\bX_i$ and $\bZ_i$ are
@@ -487,7 +487,7 @@ we simulate $10000$ independent samples of responses for the randomized
 complete block design in Table~\ref{tab:culcita}, at the MAL estimates
 in the $\bbeta$ parametrization when all data points are used (see
 Table~\ref{XXX} of the Supplementary Materials  \IK{include that}). For each sample, we
-compute the MAL and MSAPL estimates, as well as the \texttt{bglmer} estimates based on
+compute the MAL and MSPAL estimates, as well as the \texttt{bglmer} estimates based on
 normal and t priors.
 
 \begin{figure}[t]
@@ -592,7 +592,7 @@ approach to resolving issues with ML or MAL estimates being in
 $\partial \Theta$, like those encountered in the example of
 Section~\ref{sec:culcita_dat}, is to instead use MPL or MPAL
 estimators from a penalty that satisfies
-$\lim_{r \to \infty} P(\btheta(r)) = -\infty$ and which bounded from above. Then, if there is at
+$\lim_{r \to \infty} P(\btheta(r)) = -\infty$ and which are bounded from above. Then, if there is at
 least one point $\btheta \in \Theta$ such that
 $\ell(\btheta)  > -\infty$, it must hold that
 $\tilde\btheta$ is in the interior of $\Theta$.
@@ -652,7 +652,7 @@ We impose standard M-estimation regularity conditions on the score function to e
 	\item[A0] Both $\ell(\btheta),\tilde{\ell}(\btheta)$ are differentiable, with  derivatives $S(\btheta),\tilde{S}(\btheta)$ 
 	\item[A1] $\underset{\btheta \in \Theta}{\sup} \; \vnorm{r_n^{-1} S(\btheta) - S_0(\btheta)} \overset{p}{\to}0$ for some deterministic function $S_0(\btheta)$ 
 	\item[A2] For all $\varepsilon>0$, $\underset{\btheta \in \Theta: \vnorm{\btheta-\btnod}\geq \varepsilon}{\inf} \vnorm{S_0(\btheta) }>0 = \vnorm{S_0(\btnod)}$ 
-	\item[A3] $\hat{\btheta}$ and $\bttilde$ are roots of $S(\btheta),\tilde{S}(\bttilde)$, i.e. $S(\hat{\btheta}) = \b0$ and $\tilde{S}(\bttilde) = \b0$. 
+	\item[A3] $\hat{\btheta}$ and $\bttilde$ are roots of $S(\btheta),\tilde{S}(\bttilde)$, i.e. $S(\hat{\btheta}) = \b0$ and $\tilde{S}(\bttilde) = \b0$
 \end{itemize}
 \begin{theorem}[Consistency]
 	\label{thm:soft_pen_cons}
@@ -675,7 +675,7 @@ The regularity conditions we impose to establish asymptotic normality of $\bttil
 To state conditions for valid hypothesis testing using the MSPAL, let $\gamma^\infty(S) = \underset{\btheta \in S}{\sup} \mnorms{\nabla \nabla^\top P(\btheta)}$ and suppose we want to test $H_0: \btheta \in \Theta^R$, where $\Theta^R \subset \Theta$ and $\dim(\Theta^R) < \dim(\Theta)$. Finally, let $\Lambda = 2(\ell(\hat \btheta) - \ell(\hat \btheta^R) )$ and similarly $\tilde{\Lambda} = 2( \tilde{\ell}(\tilde \btheta) - \tilde{\ell}(\tilde \btheta^R) )$, where $\hat \btheta^R,\tilde \btheta^R$ denote the maximizers of $\ell(\btheta),\tilde{\ell}(\btheta)$ over $\Theta^R$ respectively.
  
 \begin{theorem}[Hypothesis testing]\label{thm:hypo}
-	Assume that conditions A3-A7 hold and that $\delta^\infty = o_p(r_n)$, $\delta^\infty(B_t(\btnod)) = o_p(r_n^{1/2})$ and $\gamma^\infty(B_t(\btnod)) = o_p(r_n)$ for some $t>0$. Then, under $H_0: \tilde{\Lambda} - \Lambda = o_p(1)$.
+	Assume that conditions A3-A7 hold and that $\delta^\infty = o_p(r_n)$, $\delta^\infty(B_t(\btnod)) = o_p(r_n^{1/2})$ and $\gamma^\infty(B_t(\btnod)) = o_p(r_n)$ for some $t>0$. Then, under $H_0: \tilde{\Lambda} -~\Lambda =~o_p(1)$.
 \end{theorem}
 The conditions of Theorems \ref{thm:soft_pen_cons}-\ref{thm:hypo} are one of many and other standard arguments to establish consistency and asymptotic of a maximum likelihood estimator are expected to lead to the same results. We note that the large sample results of the MSPAL operate under the assumption that $\ell(\btheta)$ is the exact model likelihood or that $\ell(\btheta)$ is an approximate likelihood for which the convergence and regularity assumptions of A0-A7 are with respect to a quantity of interest. Corollaries S2.1-S2.3 of the supplementary material give sufficient conditions about the approximation error to achieve the asymptotic results of Theorems \ref{thm:soft_pen_cons}-\ref{thm:hypo} with an approximate likelihood. It is left to future research to link the approximation error rates of various approximation methods with these conditions. There are results on approximation errors of the log-likelihhod, that can be adapted to match our conditions. We refer the reader to \citet{ogden:2021} for approximation errors to the log-likelihood in clustered GLMMs using Laplace's method, \citet{ogden:2017} for approximation errors to the gradient of the log-likelihood with an example for an intercept-only Bernoulli-response GLMM, \citet{stringer:2022} for approximation errors to the log-likelihood in clustered GLMMs using Adaptive Gauss-Hermite quadrature and \citet{jin+andersson:2020} for general approximation errors for adaptive Gauss-Hermite quadrature. 
 
@@ -688,13 +688,13 @@ The conditions that we imposed on the penalty function for the asymptotic result
 %	\item[ii)] determine uniform bounds of $\vnorm{\nabla P_u(\btheta)}$, $\mnorm{\nabla \nabla^\top P_u(\btheta)}$ over $\Theta$, and 
 %	\item[iii)] rescale the penalty function in dependence of $r_n$ to meet the rate requirements of Theorems \ref{thm:soft_pen_cons}-\ref{thm:hypo}.
 %\end{itemize}
-Note that the normal and t priors as well as the gamma and wishart priors that \texttt{bglmer} uses to penalize the fixed effects parameters and variance components of a GLMM are not directly applicable in this framework as they do not have uniformly bounded gradients.
+Note that the normal and t priors as well as the gamma and wishart priors that \texttt{bglmer} uses to penalize the fixed effects and variance components of a GLMM are not directly applicable in this framework as they do not have uniformly bounded gradients.
 \section{Softly-penalized likelihood for Bernoulli-response GLMMs}
 \label{sec:glmm_penalties}
 
 \subsection{Fixed effects penalty}
 \label{sec:glmm_fe_pen}
-The unscaled fixed effects parameter penalty we consider in this paper is the logarithm of Jeffreys invariant prior from a logistic GLM, that is $$P_u^{\textit{FE}}(\bbeta) =  \frac{1}{2}\log \det(\bX^\top \bW \bX).$$ Here $\bX$ is the matrix of all fixed effect covariates, $\bW$ is a diagonal matrix with diagonal entries $\bW_{ii} = \mu_i(\bbeta) (1-\mu_i(\bbeta))$ and $\mu_i(\bbeta)$ is the inverse logit-transform of the fixed effects component of the linear predictor at a point $\bbeta$ in the parameter space. For notational convenience, the dependence of $\mu(\bbeta)$ on $\bbeta$ is henceforth suppressed. \citet[Theorem 1]{kosmidis+firth:2020} have shown that whenever $\bX$ is full rank, then for any path $\bbeta(r) \in \Re^p$ indexed by $r \in \Re$ such that $\lim\limits_{r \to \infty} \bbeta(r) = \bbeta^\infty$, where $\bbeta^\infty$ is an arbitrary point in $\Re^p$ with at least one infinite component, $\lim\limits_{r \to \infty} \det(\bX^\top\bW\bX) = 0$. Therefore, noting that \eqref{eq:bern_likl} is always bounded from above by one as the conditional distribution of the response is a probability mass function, and that $\log \det (\bX^\top \bW \bX)$ is nonzero for $\bbeta=\b0_p$ when $\bX$ has full rank, adding this penalty to the log-likelihood guarantees finite fixed effect parameter estimates as long as there is one $\btheta \in \Theta$ for which the log-likelihood is not $-\infty$. \citet{kosmidis+firth:2020} show further, that Jeffreys invariant prior guarantees finite fixed effects estimates for other link functions, such as the probit, complementary log-log, log-log and cauchit link, so that the proposed penalty can be generalized to GLMMs where other link functions appear more natural. 
+The unscaled fixed effects penalty we consider in this paper is the logarithm of Jeffreys invariant prior from a logistic GLM, that is $$P_u^{\textit{FE}}(\bbeta) =  \frac{1}{2}\log \det(\bX^\top \bW \bX).$$ Here $\bX$ is the matrix of all fixed effect covariates, $\bW$ is a diagonal matrix with diagonal entries $\bW_{ii} = \mu_i(\bbeta) (1-\mu_i(\bbeta))$ and $\mu_i(\bbeta)$ is the inverse logit-transform of the fixed effects component of the linear predictor at a point $\bbeta$ in the parameter space. For notational convenience, the dependence of $\mu(\bbeta)$ on $\bbeta$ is henceforth suppressed. \citet[Theorem 1]{kosmidis+firth:2020} have shown that whenever $\bX$ is full rank, then for any path $\bbeta(r) \in \Re^p$ indexed by $r \in \Re$ such that $\lim\limits_{r \to \infty} \bbeta(r) = \bbeta^\infty$, where $\bbeta^\infty$ is an arbitrary point in $\Re^p$ with at least one infinite component, $\lim\limits_{r \to \infty} \det(\bX^\top\bW\bX) = 0$. Therefore, noting that \eqref{eq:bern_likl} is always bounded from above by one as the conditional distribution of the response is a probability mass function, and that $\log \det (\bX^\top \bW \bX)$ is nonzero for $\bbeta=\b0_p$ when $\bX$ has full rank, adding this penalty to the log-likelihood guarantees finite fixed effect parameter estimates as long as there is one $\btheta \in \Theta$ for which the log-likelihood is not $-\infty$. \citet{kosmidis+firth:2020} show further, that Jeffreys invariant prior guarantees finite fixed effects estimates for other link functions, such as the probit, complementary log-log, log-log and cauchit link, so that the proposed penalty can be generalized to GLMMs where other link functions appear more natural. 
 
 The bounds on the first and second order partial derivatives of Jeffreys invariant prior in \eqref{eq:jeffrey_deriv_bound} and \eqref{eq:jeffrey_deriv_bound2}, can be used to establish the range of scaling factors that are in line with Theorems \ref{thm:soft_pen_cons}- \ref{thm:hypo}. In particular, we show in Theorem S3.1 of the supplementary material, that for any full rank matrix $\bX \in \Re^{n \times p}$ and any $\bbeta \in \Re^p$ it holds that 
 \begin{align}\label{eq:jeffrey_deriv_bound}
@@ -859,7 +859,7 @@ This paper proposed the MSPAL estimator for stable parameter estimation in Berno
 \bibliographystyle{chicago}
 \bibliography{softpen}
 
-
+\includepdf[pages=-]{softpen_supplementary.pdf}
 \end{document}
 
 % Any two distinct random vectors ${\bb Y}_i$ and ${\bb Y}_j$ may share
@@ -1112,7 +1112,7 @@ The scaling factors in this paper are based on
 \subsection{Fixed effects penalty} 
 \label{sec:penalties} 
 
-The unscaled fixed effects parameter penalty considered in this study is $P_u^{\text{FE}}(\beta) =  \frac{1}{2}\log \det(\bX^\top\bW\bX)$. Here $\bX$ is the matrix of all fixed effect covariates, $\bW$ is a diagonal matrix with diagonal entries $\bW_{ii} = \mu_i(\beta) (1-\mu_i(\beta))$ and $\mu_i(\beta)$ is the inverse logit-transform of the fixed effects component of the linear predictor at a point $\beta$ in the parameter space, i.e. $\textrm{logit}(\mu_i(\beta))= \textbf{\bx}_i^\top\beta$. For notational convenience, the dependence of $\mu(\beta)$ on $\beta$ is henceforth suppressed. This penalty function, which is the logarithm of Jeffreys invariant prior for a binomial-response GLM, has a long tradition in the bias reduction literature for maximum likelihood estimators \citep{firth1993bias,kosmidis+firth:2020}. Recently, \citet[Theorem 1]{kosmidis+firth:2020} have shown that whenever $\bX$ is full rank, then for any sequence $\beta_r \in \Re^p$ indexed by $r \in \Re$ such that $\lim\limits_{r \to \infty} \underset{1\leq i \leq p}{\min} |\beta_r^{(i)}| = \infty$, $\lim\limits_{r \to \infty} \det(\bX^\top\bW\bX) = 0$, where $\beta_r^{(i)}$ refers to the $i${th} component of $\beta_r$. Therefore, noting that \eqref{eq:bern_likl} is always bounded from above by one as the conditional distribution of the response is a probability mass function, adding this penalty to the log-likelihood guarantees finite fixed effect parameter estimates as long as there is one $\theta \in \Theta$ for which the log-likelihood is not $-\infty$. The logistic link in Jeffreys prior penalty appears sensible for the clustered logistic regression model with random intercepts, which can be interpreted as penalizing extreme contributions of certain fixed effects covariates to the conditional mean. But as \citet{kosmidis+firth:2020} show, the finiteness property of the (softly) penalized MLE when penalizing with Jeffreys invariant prior extends to other link functions. In particular, if the inverse logistic function, denote it by $G(\eta) = \frac{e^\eta}{1+e^\eta}$, is replaced by any twice differentiable, invertible function $G: (0,1) \to \Re$, then the expected information matrix that would result from a Bernoulli-response GLM under said link, is again of the form $\bX^\top\bW\bX$, where now $w_{ii} = \omega({\eta}_i)$ with $\omega(\eta) = \frac{G'(\eta)^2}{G(\eta)(1-G(\eta))}$, $G'(\eta) = \frac{d G(\eta)}{d \eta}$ and ${\eta}_i = \bx_{i}^\top\beta$. If it is the case that $\underset{|\eta|\to \infty}{\lim} \omega(\eta)=0$, then \citet{kosmidis+firth:2020} show that it still holds that $\lim\limits_{r \to \infty} \det(\bX^\top\bW\bX)=0$, for any sequence $\beta_r \in \Re^p$ indexed by $r \in \Re$ such that $\lim\limits_{r \to \infty} \underset{1\leq i \leq p}{\min} |\beta_r^{(i)}| = \infty$. Specifically, the logit, probit, complementary log-log, log-log and cauchit links are some commonly-used link functions for which $\underset{|\eta|\to \infty}{\lim} \omega(\eta)=0$.
+The unscaled fixed effects penalty considered in this study is $P_u^{\text{FE}}(\beta) =  \frac{1}{2}\log \det(\bX^\top\bW\bX)$. Here $\bX$ is the matrix of all fixed effect covariates, $\bW$ is a diagonal matrix with diagonal entries $\bW_{ii} = \mu_i(\beta) (1-\mu_i(\beta))$ and $\mu_i(\beta)$ is the inverse logit-transform of the fixed effects component of the linear predictor at a point $\beta$ in the parameter space, i.e. $\textrm{logit}(\mu_i(\beta))= \textbf{\bx}_i^\top\beta$. For notational convenience, the dependence of $\mu(\beta)$ on $\beta$ is henceforth suppressed. This penalty function, which is the logarithm of Jeffreys invariant prior for a binomial-response GLM, has a long tradition in the bias reduction literature for maximum likelihood estimators \citep{firth1993bias,kosmidis+firth:2020}. Recently, \citet[Theorem 1]{kosmidis+firth:2020} have shown that whenever $\bX$ is full rank, then for any sequence $\beta_r \in \Re^p$ indexed by $r \in \Re$ such that $\lim\limits_{r \to \infty} \underset{1\leq i \leq p}{\min} |\beta_r^{(i)}| = \infty$, $\lim\limits_{r \to \infty} \det(\bX^\top\bW\bX) = 0$, where $\beta_r^{(i)}$ refers to the $i${th} component of $\beta_r$. Therefore, noting that \eqref{eq:bern_likl} is always bounded from above by one as the conditional distribution of the response is a probability mass function, adding this penalty to the log-likelihood guarantees finite fixed effect parameter estimates as long as there is one $\theta \in \Theta$ for which the log-likelihood is not $-\infty$. The logistic link in Jeffreys prior penalty appears sensible for the clustered logistic regression model with random intercepts, which can be interpreted as penalizing extreme contributions of certain fixed effects covariates to the conditional mean. But as \citet{kosmidis+firth:2020} show, the finiteness property of the (softly) penalized MLE when penalizing with Jeffreys invariant prior extends to other link functions. In particular, if the inverse logistic function, denote it by $G(\eta) = \frac{e^\eta}{1+e^\eta}$, is replaced by any twice differentiable, invertible function $G: (0,1) \to \Re$, then the expected information matrix that would result from a Bernoulli-response GLM under said link, is again of the form $\bX^\top\bW\bX$, where now $w_{ii} = \omega({\eta}_i)$ with $\omega(\eta) = \frac{G'(\eta)^2}{G(\eta)(1-G(\eta))}$, $G'(\eta) = \frac{d G(\eta)}{d \eta}$ and ${\eta}_i = \bx_{i}^\top\beta$. If it is the case that $\underset{|\eta|\to \infty}{\lim} \omega(\eta)=0$, then \citet{kosmidis+firth:2020} show that it still holds that $\lim\limits_{r \to \infty} \det(\bX^\top\bW\bX)=0$, for any sequence $\beta_r \in \Re^p$ indexed by $r \in \Re$ such that $\lim\limits_{r \to \infty} \underset{1\leq i \leq p}{\min} |\beta_r^{(i)}| = \infty$. Specifically, the logit, probit, complementary log-log, log-log and cauchit links are some commonly-used link functions for which $\underset{|\eta|\to \infty}{\lim} \omega(\eta)=0$.
 
 %\IK{Add paragraph about exactly invariant under linear transformations}
 Besides the above described limiting behaviour, which makes the logarithm of Jeffreys invariant prior a natural fixed effects penalty, it is also known to be invariant under linear transformations. This invariance property is attractive for applied work as it preserves the property that the MLE of the difference of two (or more) fixed effects components is simply the difference of their MLEs. \PS{Throw out previous sentence?}
@@ -1194,7 +1194,7 @@ This section illustrates the softly penalized maximum likelihood estimation for 
 %
 %\subsection{Penalties}
 %\label{sec:pens}
-%Across all examples and simulations, the fixed effects parameters are penalized by the logarithm of Jeffreys invariant prior from a logistic regression model for Bernoulli responses. The scaling factor is based on the nuclear norm of the negative (approximated) Hessian of the model log-likelihood \eqref{eq:bern_likl}. For the diagonal variance components, differentiation is conducted with respect to the log-transformed parameters. The scaling factor is the inverse of the square root of this norm, evaluated at the ordinary MLE $\that$ whenever it exists. When the MLE is found to be degenerate, all fixed effects parameters are set to zero and the variance components matrix is set to the identity matrix. The cutoff to determine a degenerate MLE is $|\hat{\beta}_i|>20$ for the fixed effect parameter estimates. A variance components matrix is judged degenerate if any of its entries is larger than $20$ in absolute value, any diagonal entry is less than $1\textrm{e-}4$ or if any correlation is greater than $1-1\textrm{e-}4$ in absolute value. 
+%Across all examples and simulations, the fixed effects are penalized by the logarithm of Jeffreys invariant prior from a logistic regression model for Bernoulli responses. The scaling factor is based on the nuclear norm of the negative (approximated) Hessian of the model log-likelihood \eqref{eq:bern_likl}. For the diagonal variance components, differentiation is conducted with respect to the log-transformed parameters. The scaling factor is the inverse of the square root of this norm, evaluated at the ordinary MLE $\that$ whenever it exists. When the MLE is found to be degenerate, all fixed effects are set to zero and the variance components matrix is set to the identity matrix. The cutoff to determine a degenerate MLE is $|\hat{\beta}_i|>20$ for the fixed effect parameter estimates. A variance components matrix is judged degenerate if any of its entries is larger than $20$ in absolute value, any diagonal entry is less than $1\textrm{e-}4$ or if any correlation is greater than $1-1\textrm{e-}4$ in absolute value. 
 %
 %Hence the fixed effects penalty is given by
 %\begin{equation}
@@ -1219,7 +1219,7 @@ This section illustrates the softly penalized maximum likelihood estimation for 
 
 \subsection{Penalties}
 \label{sec:pens}
-Across all examples and simulations, the fixed effects parameters are penalized by the logarithm of Jeffreys invariant prior from a logistic regression model for Bernoulli responses. 
+Across all examples and simulations, the fixed effects are penalized by the logarithm of Jeffreys invariant prior from a logistic regression model for Bernoulli responses. 
 
 
 Hence the fixed effects penalty is given by
@@ -1293,7 +1293,7 @@ Recall from Section \ref{sec:culcita_dat} that the Culcita dataset of \citet{mck
 
 \subsection{Example: Conditional inference data}
 \label{sec:ci}
-This dataset, originally collected as a control condition of experiment 3)b) in \citet{singmann+etal:2016} and therein analysed in a different context, investigates the probabilistic validity of conditional inference tasks that participants were asked to conduct. It consists of 464 observations clustered among 29 participants. The binary response variable \textit{response} indicates whether a participant's estimate of the probability of a certain conclusion exceeds the summed participant's estimated uncertainty of the premises for each conditional rule. Fixed effect covariates are the binary variables \textit{p-validity}, indicating whether a certain inferential task is probabilistically valid, \textit{type}, indicating whether the inference was affirmative or denying, and \textit{counterexamples}, indicating whether there were many or few counterexamples to the presented inference, as well as their interactions. The data is analysed using a clustered logistic regression model with random intercepts and random slopes for \textit{counterexamples} per participant. The model was fit by glmer using a Laplace approximation to the log-likelihood function as well as a custom routine, both penalized and unpenalized, using the same approximation method. Under soft penalization, the fixed effects parameters were penalized by the rescaled version of Jeffreys invariant prior for logistic regression models given in \eqref{eq:FE_pen} and the Cholesky-factor of the variance components matrix was penalized according to \eqref{eq:MVRE_pen}. When estimated by ordinary maximum approximate likelihood methods, the estimates exhibit infinite fixed effects estimates, linked to separation issues \citep{singmann2012stack}, as well as degenerate variance components estimates. The results are summarized in Table \ref{tab:ci} below. 
+This dataset, originally collected as a control condition of experiment 3)b) in \citet{singmann+etal:2016} and therein analysed in a different context, investigates the probabilistic validity of conditional inference tasks that participants were asked to conduct. It consists of 464 observations clustered among 29 participants. The binary response variable \textit{response} indicates whether a participant's estimate of the probability of a certain conclusion exceeds the summed participant's estimated uncertainty of the premises for each conditional rule. Fixed effect covariates are the binary variables \textit{p-validity}, indicating whether a certain inferential task is probabilistically valid, \textit{type}, indicating whether the inference was affirmative or denying, and \textit{counterexamples}, indicating whether there were many or few counterexamples to the presented inference, as well as their interactions. The data is analysed using a clustered logistic regression model with random intercepts and random slopes for \textit{counterexamples} per participant. The model was fit by glmer using a Laplace approximation to the log-likelihood function as well as a custom routine, both penalized and unpenalized, using the same approximation method. Under soft penalization, the fixed effects were penalized by the rescaled version of Jeffreys invariant prior for logistic regression models given in \eqref{eq:FE_pen} and the Cholesky-factor of the variance components matrix was penalized according to \eqref{eq:MVRE_pen}. When estimated by ordinary maximum approximate likelihood methods, the estimates exhibit infinite fixed effects estimates, linked to separation issues \citep{singmann2012stack}, as well as degenerate variance components estimates. The results are summarized in Table \ref{tab:ci} below. 
 
 \begin{table}[t]
 	\centering
@@ -1358,10 +1358,10 @@ This dataset, originally collected as a control condition of experiment 3)b) in 
 \end{table}
 
 
-\subsection{Infinite fixed effects parameter estimates}
+\subsection{Infinite fixed effects estimates}
 \label{sec:simul_1}
 
-This section presents a simulation that seeks to provoke degenerate fixed effect parameter estimates through a strong dependence of the responses on the fixed effects parameters - a phenomenon known to occur in standard logistic regression \citep{albert1984existence,kosmidis+firth:2020}.
+This section presents a simulation that seeks to provoke degenerate fixed effect parameter estimates through a strong dependence of the responses on the fixed effects - a phenomenon known to occur in standard logistic regression \citep{albert1984existence,kosmidis+firth:2020}.
 
 For this, a clustered logistic regression model with random intercepts is simulated under the following setup. For five clusters $i=1,\ldots,5$ and within cluster observations $j=1,\ldots,n$, $n \in \{50,100,200\}$, the vector of fixed effects covariates $\bx_{ij}$ is given by an i.i.d. sample $\bx = (x_1,x_2,x_3,x_3,x_4,x_5)$ where $X_1=1, {X}_2 \sim \text{N}(0,1), {X}_3\sim \textrm{Ber}\left(\frac{1}{2}\right), {X}_4=\textrm{Ber}\left(\frac{1}{4}\right),{X}_5\sim\exp(1)$. The fixed effect covariates are drawn once and held fixed over the simulation. To control the degree of dependence of the responses on a particular fixed effect covariate, the parameter of fixed effects is set as $\beta=(1,-0.5,\lambda,0.25,-1)$, where $\lambda$ is varied over twenty values on the evenly spaced grid from $-10$ to $10$. For each specification of $n$, $\lambda$, 100 samples of $\textbf{u}=(u_1,\ldots,u_5)$, $U_i \sim \text{N}(0,9)$ and $\textbf{y}=(\textbf{y}_1,\ldots,\textbf{y}_5)$, $\textbf{y}_i = (y_{1i},\ldots,y_{ni})$, $Y_{ij} \sim \textrm{Ber}(\mu_{ij})$, and $\textrm{logit}(\mu_{ij})=\bx_{ij}^\top\beta + u_i$ are drawn. The random effects dispersion parameter $\sigma = 3$ was chosen as to avoid estimation issues associated with small random effects (cf. Section \ref{sec:simul_3} ). Estimation is conducted using a Gauss-Hermite quadrature approximation of \eqref{eq:bern_likl} with 20 quadrature points. 
 
@@ -1432,7 +1432,7 @@ As can be seen from Table \ref{tab:sep_simul_1}, large absolute values of the pa
 \label{sec:simul_2} 
 
 Singularity of the random effects parameter estimates in GLMMs occurs when the estimated random effects variance matrix is positive-semidefinite rather than positive definite. In the case where $\Sigma$ is parametrized by its Cholesky factorization in the estimation, this corresponds some to diagonal entries being equal to zero.
-For the clustered logistic regression with random intercepts, variance components singularity manifests itself as $\hat{\sigma} =0$. To investigate the behaviour of the (softly penalized) variance components MLE for this model, the following data generating process was considered. For clusters $i=1,\ldots,5$, and within cluster observations $j=1,\ldots,n$ $n \in \{50,100,200\}$, let the vector of fixed effects covariates $\bx_{ij}$ be given by an i.i.d. sample $\bx = (x_1,x_2,x_3,x_3,x_4,x_5)$ where $X_1=1, {X}_2 \sim \text{N}(0,1), {X}_3\sim \textrm{Ber}\left(\frac{1}{2}\right), {X}_4=\textrm{Ber}\left(\frac{1}{4}\right),{X}_5\sim\exp(1)$. The fixed effect covariates and fixed effects parameters $\beta = (1,-0.5,0.5,0.25,-1)$ are held fixed while $\sigma$ is varied  over 20 values on the evenly spaced grid from $0.1$ to $10$. For each value of $n$, $\sigma$, 100 samples of responses $\textbf{y}=(\textbf{y}_1,\ldots,y_5)$, $\textbf{y}_i = (y_{1i},\ldots,y_{ni})$ are drawn according to $Y_{ij} \sim \textrm{Ber}(\mu_{ij})$, and $\textrm{logit}(\mu_{ij})=\bx_{ij}^\top\beta + u_i$, where $U_i \sim \text{N}(0,\sigma)$ is drawn anew for each of the 100 draws of $\textbf{y}$. The parameters are estimated using the Gauss-Hermite quadrature approximation to \eqref{eq:bern_likl} with 20 quadrature points. 
+For the clustered logistic regression with random intercepts, variance components singularity manifests itself as $\hat{\sigma} =0$. To investigate the behaviour of the (softly penalized) variance components MLE for this model, the following data generating process was considered. For clusters $i=1,\ldots,5$, and within cluster observations $j=1,\ldots,n$ $n \in \{50,100,200\}$, let the vector of fixed effects covariates $\bx_{ij}$ be given by an i.i.d. sample $\bx = (x_1,x_2,x_3,x_3,x_4,x_5)$ where $X_1=1, {X}_2 \sim \text{N}(0,1), {X}_3\sim \textrm{Ber}\left(\frac{1}{2}\right), {X}_4=\textrm{Ber}\left(\frac{1}{4}\right),{X}_5\sim\exp(1)$. The fixed effect covariates and fixed effects $\beta = (1,-0.5,0.5,0.25,-1)$ are held fixed while $\sigma$ is varied  over 20 values on the evenly spaced grid from $0.1$ to $10$. For each value of $n$, $\sigma$, 100 samples of responses $\textbf{y}=(\textbf{y}_1,\ldots,y_5)$, $\textbf{y}_i = (y_{1i},\ldots,y_{ni})$ are drawn according to $Y_{ij} \sim \textrm{Ber}(\mu_{ij})$, and $\textrm{logit}(\mu_{ij})=\bx_{ij}^\top\beta + u_i$, where $U_i \sim \text{N}(0,\sigma)$ is drawn anew for each of the 100 draws of $\textbf{y}$. The parameters are estimated using the Gauss-Hermite quadrature approximation to \eqref{eq:bern_likl} with 20 quadrature points. 
 
 Table \ref{tab:sing_re_1} summarizes the number of singular estimates, for each value of $n,\sigma$ for both the ordinary MLE and the softly penalized MLE. An estimate was deemed singular when it is less than $1\textrm{e-}4$ and its asymptotic standard error was greater than 100. Figure \ref{fig:sing_re_1} shows the dispersion of $\widehat{\log\sigma},\widetilde{\log \sigma}$, per specification of $\sigma,n$. As previously, in the unpenalized case these boxplots do not approximate the distribution of the maximum likelihood estimator as, owed to numerical precision limitations, parameter estimates which ought to be infinite or zero are not estimated as such so that the point masses at the boundaries of the parameter space are missing.
 
@@ -1526,7 +1526,7 @@ Infinite random effect variances were already encountered the Culcita data examp
 
 %To showcase the idea, consider the random intercepts clustered logistic regression model with two clusters and assume that these clusters perfectly separate the response variables. Without loss of generality, let cluster one contain all responses equal to one. If one were to directly optimize the conditional likelihood over the random effects, then it is clear that $u_1 = \infty$ and $u_2 = -\infty$ achieve that $\mu_{1j} = 1$, and $\mu_{2j}=0$ $j=1,\ldots,n_i$ which in turn would maximize the conditional likelihood. Heuristically speaking since the GLMM likelihood marginalizes the conditional likelihood over the random effects distribution, the random effects parametrization which maximizes the likelihood of infinite random effects should itself have infinite variance. A proof that this holds in the oversimplified case where the linear predictor contains only a random intercept, is given in the Appendix \PS{do we even want this paragraph?}. Granted, this argument applies only to a highly simplified GLMM, and it can be argued that when the observations are completely separated by clusters, the model itself is ill-specified. But, as the simulation below and \cite{benbolkerstack} suggest, infinite random effects variances occur in a more general setting and even if there is no complete separation into clusters, the heuristics of the above argument appear to apply.
  
-To model a strong dependence of the response on the clustering variable, the following data generating process was considered. For clusters $i=1,2$, and within cluster observations $j=1,\ldots,n$ $n \in \{50,100,200\}$, the vector of fixed effects covariates $\bx_{ij}$ is an i.i.d. sample  $\bx = (x_1,x_2,x_3,x_3,x_4,x_5)$ where $X_1=1, {X}_2 \sim \text{N}(0,1), {X}_3\sim \textrm{Ber}\left(\frac{1}{2}\right), {X}_4=\textrm{Ber}\left(\frac{1}{4}\right),{X}_5\sim\exp(1)$, which is drawn once and held fixed over the simulation. The fixed effect parameters $\beta = (1,-0.5,0.5,0.25,-1)$ are held fixed while $U_i\sim \text{N}(0,\sigma^2)$ is varied via $\sigma$ which takes 20 values on the evenly spaced grid from $1$ to $10$. For each value of $n$, $\sigma$, 100 samples of $\textbf{u}=(u_1,u_2)$ and $\textbf{y}=(\textbf{y}_1,\textbf{y}_2)$, $\textbf{y}_i = (y_{1i},\ldots,y_{ni})$ are drawn according to $y_{ij} \sim \textrm{Ber}(\mu_{ij})$, and $\textrm{logit}(\mu_{ij})=\bx_{ij}^\top\beta + u_i$ are drawn. The parameters are estimated using a Gauss-Hermite quadrature approximation to \eqref{eq:bern_likl} with 20 quadrature points. Results are summarized in Table \ref{tab:inf_re} and Figure \ref{fig:inf_re}. 
+To model a strong dependence of the response on the clustering variable, the following data generating process was considered. For clusters $i=1,2$, and within cluster observations $j=1,\ldots,n$ $n \in \{50,100,200\}$, the vector of fixed effects covariates $\bx_{ij}$ is an i.i.d. sample  $\bx = (x_1,x_2,x_3,x_3,x_4,x_5)$ where $X_1=1, {X}_2 \sim \text{N}(0,1), {X}_3\sim \textrm{Ber}\left(\frac{1}{2}\right), {X}_4=\textrm{Ber}\left(\frac{1}{4}\right),{X}_5\sim\exp(1)$, which is drawn once and held fixed over the simulation. The fixed effects $\beta = (1,-0.5,0.5,0.25,-1)$ are held fixed while $U_i\sim \text{N}(0,\sigma^2)$ is varied via $\sigma$ which takes 20 values on the evenly spaced grid from $1$ to $10$. For each value of $n$, $\sigma$, 100 samples of $\textbf{u}=(u_1,u_2)$ and $\textbf{y}=(\textbf{y}_1,\textbf{y}_2)$, $\textbf{y}_i = (y_{1i},\ldots,y_{ni})$ are drawn according to $y_{ij} \sim \textrm{Ber}(\mu_{ij})$, and $\textrm{logit}(\mu_{ij})=\bx_{ij}^\top\beta + u_i$ are drawn. The parameters are estimated using a Gauss-Hermite quadrature approximation to \eqref{eq:bern_likl} with 20 quadrature points. Results are summarized in Table \ref{tab:inf_re} and Figure \ref{fig:inf_re}. 
 
 
 \begin{table}[ht]

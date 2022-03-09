@@ -475,10 +475,10 @@ perform_experiment <- function(truth, data,
                                nsimu = 100, seed = NULL,
                                alt_start = rep(0, length(truth)), nAGQ = 1,
                                optimization_methods = c("BFGS", "CG"),
-                               ncores = 10,
+                               ncores = 8,
                                mathpar = NULL,
                                c_prior = NULL) {
-  registerDoMC(8)
+  registerDoMC(7)
   if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
     runif(1)
   if (is.null(seed))
