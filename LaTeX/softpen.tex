@@ -25,8 +25,8 @@
 \usepackage{float}
 
 
-\usepackage[inline]{showlabels}
-\renewcommand{\showlabelfont}{\small\tt\color{red}}
+%\usepackage[inline]{showlabels}
+%\renewcommand{\showlabelfont}{\small\tt\color{red}}
 
 %% Commands 
 % \newcommand*{\bb}{}
@@ -198,7 +198,7 @@ for example][]{bolker+etal:2009, bolker:2018,
   pasch+etal:2013}, both instances of boundary estimates can
 cause havoc to numerical optimization procedures used for MAL. In
 addition, if they go undetected, they can substantially impact
-first-order inferential procedures \PS{not familiar with term first-order inferential procedures}, like Wald tests, resulting in
+first-order inferential procedures, like Wald tests, resulting in
 spuriously strong or weak conclusions. In contrast to the
 numerous approaches to detect (see, for example,
 \citealt{kosmidis+schumacher:2021} for the \texttt{detectseparation} R
@@ -233,11 +233,11 @@ sense that the MSPAL estimates of linear transformations of the fixed
 effects parameters are the linear transformations of the MSPAL
 estimates. Both i) and ii) are in contrast to other penalization
 procedures that have been proposed in the literature \citep[see, for
-example,][]{chung+etal:2013, chung+etal:2015} \IK{add citations}. Maximum
+example,][]{chung+etal:2013, chung+etal:2015}. Maximum
 softly-penalized likelihood is compared to prominent competing
 approaches through two real-data examples, and comprehensive
 simulation studies that illustrate its superior finite-sample
-performance. \PS{we only compare to MAL and bglmer, does this warrant this formulation?}
+performance. 
 
 The remainder of the paper is organized as follows. Section \ref{sec:bern_GLMMs} defines the clustered
 Bernoulli-response GLMM and Section \ref{sec:culcita_dat} gives a motivating real-data example of
@@ -281,9 +281,7 @@ formed from subsets of columns of $\bV_i$. The variance-covariance
 matrix $\bSigma$ collects the variance components and is assumed to be
 symmetric and positive definite. The Bernoulli-response GLMM
 in~(\ref{eq:bern_cluster}) is here introduced explicitly in terms of
-clusters. \PS{The next sentence needs discussion, I do not understand this formulation. Shouldn't it be: The other often encountered formulation of GLMMs in the literature \citep[Chapter 7.4]{mcculloch+etal:2008} absorbs the clustering into the variance components structure of $\bSigma$ and is therefore a clustered GLMM with a single cluster.}The other version \IK{give a reference} that often appears
-in the literature is then simply a clustered GLMM with one observation
-per cluster. Hence, the presentation and results here are with no loss
+clusters. The other often encountered formulation of GLMMs in the literature \citep[Chapter 7.4]{mcculloch+etal:2008} absorbs the clustering into the variance components structure of $\bSigma$ and is therefore a clustered GLMM with a single cluster. Hence, the presentation and results here are with no loss
 of generality.
 
 The marginal likelihood about $\bb{\beta}$ and $\bb{\Sigma}$ for
@@ -392,7 +390,7 @@ $\beta_0, \beta_1, \beta_2, \beta_3$ are in reality infinite in
 absolute value.
 
 \begin{table}[t]
-  \caption{\IK{write this}}
+  \caption{Estimates from the degenerate Culcita subdataset of \citet{bolker:2015} using MAL,MSPAL and \texttt{bglmer} } 
   \label{tab:culcita_inf}
   \centering
   \begin{tabular}{lD{.}{.}{3}D{.}{.}{3}D{.}{.}{3}D{.}{.}{3}D{.}{.}{3}}
@@ -494,7 +492,7 @@ normal and t priors.
   \begin{center}
     \includegraphics[width = \textwidth]{Figures/simulation_results.pdf}
   \end{center}
-  \caption{\IK{write this}}
+  \caption{Performance metrics for parameter estimates of MAL,MSPAL and \texttt{bglmer} from simulating a Bernoulli-response GLMM from the Culcita data at the MAL}
   \label{fig:culcita_simu0}
 \end{figure}
 
@@ -534,7 +532,7 @@ Figure~\ref{fig:culcita_simu0} we see that the penalty we propose not only ensur
 that estimates are away from the boundary of the parameter space, but
 its soft nature guarantees that estimators have the optimal
 frequentist properties that would be expected by the MAL estimator
-had it not taken boundary values. \PS{how do wee see the asymptotics(optimality) from figure 1?}
+had it not taken boundary values. 
 
 
 \section{Penalized likelihoods}
