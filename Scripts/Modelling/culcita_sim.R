@@ -9,8 +9,13 @@ library(ggplot2)
 library(patchwork)
 library(scales)
 
-source("../Software/MSPAL.R")
-load("../../Data/culcita.Rdata")
+software_path <- "../Software"
+data_path <- "../../Data"
+results_path <- "../../Results"
+figures_path <- "../../Figures"
+
+source(file.path(software_path, "MSPAL.R"))
+load(file.path(data_path, "culcita.RData"))
 
 ## Parameterization
 estimate_threshold <- 30
@@ -51,7 +56,7 @@ out_summary <- summarize_experiment(out,
                                     se_threshold = se_threshold,
                                     grad_threshold = grad_threshold)
 
-#load("../../Results/simulation_study_example1.rda")
+#load(file.path(results_path, "simulation_study_example1.rda"))
 out$method <- ordered(
   rep(c("ML", "bglmer[n]", "bglmer[t]", "MSPL"), each = 5),
   levels = c("MSPL", "bglmer[t]", "bglmer[n]", "ML"))
@@ -72,4 +77,4 @@ out %>%
             summarize(mean(failed))
 
 
-save.image("../../Results/simulation_study_example1.rda")
+save.image(file.path(results_path, "simulation_study_example1.rda"))

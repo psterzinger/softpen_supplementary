@@ -4,7 +4,13 @@ library("expint")
 library("optimx")
 library("numDeriv")
 library("memisc")
-source("../Software/MSPAL.R")
+
+software_path <- "../Software"
+data_path <- "../../Data"
+results_path <- "../../Results"
+figures_path <- "../../Figures"
+
+source(file.path(software_path, "MSPAL.R"))
 
 ## A wrapper function to fit all methods in Example 1 of the main text and pretty-report the output
 fit_all <- function(start, data, nAGQ = 100, cv = 1) {
@@ -24,7 +30,7 @@ fit_all <- function(start, data, nAGQ = 100, cv = 1) {
 
 ## Data from the worked examples of Bolker (2015)
 ## downloaded from https://github.com/bbolker/mixedmodels-misc/raw/master/data/culcita.RData on 20220208
-load("../../Data/culcita.RData")
+load(file.path(data_path, "culcita.RData"))
 
 atypical_obs <- 20
 ## Remove atypical observation and fit using treatment contrasts with "none" as baseline
