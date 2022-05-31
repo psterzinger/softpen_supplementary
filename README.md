@@ -2,12 +2,13 @@
 
 This repo contains all materials to the paper:  *Maximum softly-penalized likelihood for mixed effects logistic regression*.
 
-- **Documents**: Files and Figures to generate the paper and the accompanying supplementary material.
+- **Figures**: Figures from the paper.
 - **Data**: Data sets analysed in the Paper.
 - **Results**: Numerical Results from Simulations in paper and supplementary material.
 - **Scripts**: All scripts to recreate the numerical results in the paper. 
   - **./Modelling** has all scripts that carry out the numerical analyses. To replicate, best copy this repo, and set the working directory to Modelling. 
   - **./Software** contains all two scripts that carry out estimation, create figures and tables, and are called from the Scripts in Modelling. 
+- **softpen_supplementary.pdf**: Document with further material to the examples and simulations of the paper and additional simulation studies.
 
 Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
 
