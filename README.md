@@ -1,6 +1,6 @@
 # softpen_supplementary
 
-This repo contains all materials to the paper:  *Maximum softly-penalized likelihood for mixed effects logistic regression*
+This repo contains all materials to the paper:  *Maximum softly-penalized likelihood for mixed effects logistic regression*.
 
 - **Documents**: Files and Figures to generate the paper and the accompanying supplementary material.
 - **Data**: Data sets analysed in the Paper.
