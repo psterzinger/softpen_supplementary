@@ -7,7 +7,13 @@ library(patchwork)
 library(ggplot2)
 library(grid)
 library(xtable)
-source("../Software/mv_MSPAL.R")
+
+software_path <- "../Software"
+data_path <- "../../Data"
+results_path <- "../../Results"
+figures_path <- "../../Documents/Figures"
+
+source(file.path(software_path, "mv_MSPAL.R"))
 
 ns <- c(50, 100, 200)
 k <- 5
@@ -72,9 +78,10 @@ for (i in seq_len(length(ns))) {
   simul_list[[i]] <- out_list
 }
 simul <- do.call(rbind, simul_list)
-#saveRDS(simul, "../../Results/Sim_1.Rds")
+#saveRDS(simul, file.path(results_path, "Sim_1.Rds"))
 
-simul_data <- readRDS("../../Results/Sim_1.Rds")
+
+simul_data <- readRDS(file.path(results_path, "Sim_1.Rds"))
 
 ## Figure
 xlab <- expression(lambda)
@@ -87,7 +94,7 @@ sim$method <- ordered(
   levels = c("MSPL", "bglmer[t]", "bglmer[n]", "ML"))
 bp <-  mv_boxplot_simul(sim, truelab = truelab, par_ind = 3, ylims = ylims)
 
-pdf("../../Documents/Figures/sim1.pdf", height = 8.27, width = 11.69)
+pdf(file.path(figures_path, "sim1.pdf"), height = 8.27, width = 11.69)
 bp
 grid.draw(textGrob(ylab, x = .02, rot = 90))
 grid.draw(textGrob(xlab, y = 0.01, rot = 0))
@@ -109,5 +116,5 @@ print(sim1_tab,
   include.colnames = TRUE,
   include.rownames = FALSE,
   sanitize.text.function = function(x) x,
-  #file = "../../Results/Sim_1_tab.tex",
+  #file = file.path(results_path, "Sim_1_tab.tex"),
   hline.after = NULL)

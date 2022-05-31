@@ -10,10 +10,18 @@ library(cowplot)
 library(dplyr)
 library(doMC)
 library(memisc)
-source("../Software/mv_MSPAL.R")
+
+software_path <- "../Software"
+data_path <- "../../Data"
+results_path <- "../../Results"
+figures_path <- "../../Documents/Figures"
+
+source(file.path(software_path, "mv_MSPAL.R"))
 
 # Conditional inference data from "http://pastebin.com/raw.php?i=0yDpEri8"), last accessed: May 31, 2022
-d.binom <- read.table("../../Data/d.binom.csv", header = TRUE, sep = ",")
+d.binom <- read.table(file.path(data_path, "d.binom.csv"),
+  header = TRUE,
+  sep = ",")
 
 data <- list(Y = d.binom$response,
             X = model.matrix(
@@ -33,7 +41,7 @@ tab <- mv_make_table(cond_inf_results, p, q, npar)
 print(tab,
     sanitize.text.function = function(x) x,
     include.rownames = FALSE,
-    #file = "../../Results/cond_inf_table.tex",
+    #file = file.path(results_path,"cond_inf_table.tex"),
     compress = FALSE,
     only.contents = TRUE,
     comment = FALSE)
@@ -56,10 +64,10 @@ simul <-  mv_perform_experiment(truth = truth,
                             seed = 0,
                             mathpar = mathpar)
 
-#saveRDS(simul, "../../Results/cond_inf_sim10000.Rds")
+#saveRDS(simul, file.path(results_path, "cond_inf_sim10000.Rds"))
 
 ## simulation analysis
-simul_data <- readRDS("../../Results/cond_inf_sim10000.Rds")
+simul_data <- readRDS(file.path(results_path, "cond_inf_sim10000.Rds"))
 fe_names <-  rep(NA, p)
     for (i in 1:p) {
         if (i == 1) {
@@ -80,12 +88,12 @@ simul_data$method <- ordered(
   rep(c("ML", "bglmer[n]", "bglmer[t]", "MSPL"), each = npar),
   levels = c("MSPL", "bglmer[t]", "bglmer[n]", "ML"))
 
-pdf("../../Documents/Figures/cond_inf_simul.pdf", width = 10, height = 5)
+pdf(file.path(figures_path, "cond_inf_simul.pdf"), width = 10, height = 5)
   mv_bar_plot_experiment(simul_data, p = 8, q = 2)
 dev.off()
 
 ### Full data
-pdf("../../Documents/Figures/cond_inf_simul.pdf", width = 10, height = 5)
+pdf(file.path(figures_path, "cond_inf_simul.pdf"), width = 10, height = 5)
   mv_bar_plot_experiment(simul_data, p = 8, q = 2, var_only = FALSE)
 dev.off()
 mv_percentile_table(sim, p = 8, q = 2, var_only = FALSE)
@@ -139,7 +147,7 @@ print(xtable(test4, digits = 2),
     include.colnames = TRUE,
     include.rownames = FALSE,
     sanitize.text.function = function(x) x,
-    #file = "../../Results/cond_inf_table_full.tex",
+    #file = file.path(results_path, "cond_inf_table_full.tex"),
     hline.after = NULL,
     scalebox = 0.7)
 }
