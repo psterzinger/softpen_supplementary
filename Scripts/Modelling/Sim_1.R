@@ -11,7 +11,7 @@ library(xtable)
 software_path <- "../Software"
 data_path <- "../../Data"
 results_path <- "../../Results"
-figures_path <- "../../Figures"
+figures_path <- results_path
 
 source(file.path(software_path, "mv_MSPAL.R"))
 
