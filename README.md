@@ -3,7 +3,7 @@
 This repo contains all materials to the paper:  *Maximum softly-penalized likelihood for mixed effects logistic regression*.
 
 - **Data**: Contains the Culcita data and the conditional inference data, that is analysed in Sections 3 and 8 in the paper. 
-- **Results**: Holds all numerical results and figures from analyses and simulations in the paper and the supplementary material.
+- **Results**: Holds all numerical results from analyses and simulations in the paper and the supplementary material.
 - **Scripts**: All scripts to recreate the numerical results in the paper. 
 	- **./Functions**: Contains the scripts `MSPAL.R` and `mv_MSPAL.R` which contain all functions used for the estimations and simulations as well as for the generation of figures and tables. 
 	- `culcita_sep.R`: Generates the estimates in Table 2 of the main text and Table S1 of the supplementary material. 
