@@ -1,6 +1,6 @@
 # softpen_supplementary
 
-This repo contains all materials to the paper:  *Maximum softly-penalized likelihood for mixed effects logistic regression* (Sterzinger and Kosmidis, 2022).
+This repo contains all materials to the paper:  *Maximum softly-penalized likelihood for mixed effects logistic regression Sterzinger and Kosmidis (2022), University of Warwick*. All correspondence to philpp dot sterzinger at warwick dot ac dot uk. 
 
 - **Data**: Contains the Culcita data and the conditional inference data that is analysed in Sections 3 and 8 in the paper. 
 - **Results**: Holds all numerical results from analyses and simulations in the paper and the supplementary material.
