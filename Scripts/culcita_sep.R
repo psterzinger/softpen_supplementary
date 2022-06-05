@@ -14,8 +14,8 @@ library("numDeriv")
 library("memisc")
 
 functions_path <- "./Functions"
-data_path <- "../../Data"
-results_path <- "../../Results"
+data_path <- "../Data"
+results_path <- "../Results"
 figures_path <- results_path
 
 source(file.path(functions_path, "MSPAL.R"))
