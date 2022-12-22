@@ -82,7 +82,7 @@ penalty <- function(par, data, mult = c(0, 0), pen_log_sigma = NULL) {
   M <- data$M
   grouping <- data$grouping
   npar <- length(par)
-  p <- ncol(X)
+  p <- max(ncol(X),1)
   q <- max(ncol(data$Z),1)
   beta <- par[seq.int(p)]
   par_re <- par[(p + 1):npar]
@@ -197,7 +197,7 @@ get_MSPAL <- function(start, data, nAGQ = 1,
                       mult = NULL, pen_log_sigma = NULL,
                       optimization_methods = c("BFGS", "CG"),
                       method_suffix = "", method_name = NULL,...) {
-  p <- ncol(data$X) 
+  p <- max(ncol(data$X),1)
   q <- max(ncol(data$Z),1)
   npar <- p+0.5*q*(q+1)
   out <- try({
