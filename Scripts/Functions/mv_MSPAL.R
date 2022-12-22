@@ -1,73 +1,38 @@
-re_names <- function(q){
-  mat <- matrix(NA,nrow=q,ncol=q) 
-  for(i in 1:q){
-    for(j in 1:i){
-      mat[i,j] <- paste("l_{",paste(i,j,sep=","),"}",sep="")
-    }
-  }
-  diag(mat) <- vapply(diag(mat),function(entry){paste("\\log ",entry,sep="")},"a")
-  return(paste("$",mat[lower.tri(mat,diag=T)],"$",sep=""))
-}
-
-loglik <- function(par, data, nAGQ = 1, lfun = NULL) {
+mv_loglik <- function(par, data, nAGQ = 1, lfun = NULL) {
+  ## glmer parameterization: c(L,beta), L: lower triangular cholesky factor of sigma
   if (is.null(lfun))
-    lfun <- infer_loglik(data, nAGQ)
+    lfun <- mv_infer_loglik(data, nAGQ)
   out <- try(lfun(par), silent = TRUE)
   if (is(out, "try-error")) NA else out
 }
 
-infer_loglik <- function(data, nAGQ = 1) {
+mv_infer_loglik <- function(data, nAGQ = 1) {
   data$quadtable <- NULL
   p <- ncol(data$X)
-  q <- max(ncol(data$Z),1) 
-  
+  q <- max(ncol(data$Z), 1)
   dfun <- glmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
                 family = binomial, nAGQ = nAGQ, devFunOnly = TRUE)
   ## Change to logsigma parameterization and fixef first
-  function(par) -dfun(pars_w2n(par,p,q)) / 2
+  function(par) -dfun(pars_w2n(par, p, q)) / 2
 }
 
-pars_w2n <- function(par,p,q){
+pars_w2n <- function(par, p, q) {
   par_fe <- par[1:p]
-  par_re <- par[(p+1):length(par)] 
-  inds <- vapply(1:q,function(i){2+(q+2)*(i-1)-i*(i+1)/2},1)
-  par_re[inds] <- exp(par_re[inds]) 
-  return(c(par_re,par_fe)) 
+  par_re <- par[(p + 1):length(par)]
+  inds <- vapply(1:q, function(i) {2 + (q + 2) * (i - 1) - i * (i + 1) / 2}, 1)
+  par_re[inds] <- exp(par_re[inds])
+  return(c(par_re, par_fe))
 }
 
-pars_n2w <- function(beta,par_re,q){
-  inds <- vapply(1:q,function(i){2+(q+2)*(i-1)-i*(i+1)/2},1)
-  par_re[inds] <- log(par_re[inds]) 
-  return(c(beta,par_re))
-}
-
-ind_mat <- function(q){
-  if(q>1){
-    mat <- matrix(NA,nrow=q,ncol=q) 
-    for(i in 1:q){
-      for(j in 1:i){
-        mat[i,j] <- paste("l[",paste(i,j,sep=","),"]",sep="")
-      }
-    }
-    
-    diag(mat) <- vapply(diag(mat),function(entry){paste("log(",entry,")",sep="")},"a")
-    return(mat[lower.tri(mat,diag=T)])
-  }else{
-    return("log(sigma)")
-  }
+pars_n2w <- function(beta, par_re, q) {
+  inds <- vapply(1:q, function(i) { 2 + (q + 2) * (i - 1) - i * (i + 1) / 2}, 1)
+  par_re[inds] <- log(par_re[inds])
+  return(c(beta, par_re))
 }
 
 ## Numerically evaluate score function
-scores <- function(par, data, nAGQ, lfun) {
-  grad(loglik, par, data = data, nAGQ = nAGQ, lfun = lfun)
-}
-
-## Options for pen_log_sigm
-linear_LR <- function(x, c, d, e, centering = 0) {
-  x <- x - centering
-  ifelse(x <= c, - e * c * x + e * c^2 / 2,
-         ifelse(x >= d, - e * d * x + e * d^2 / 2,
-                - e * x^2 / 2))
+mv_scores <- function(par, data, nAGQ = 1, lfun) {
+  numDeriv::grad(mv_loglik, par, data = data, nAGQ = nAGQ, lfun = lfun)
 }
 
 nHuber <- function(x, a) {
@@ -76,17 +41,17 @@ nHuber <- function(x, a) {
          - x^2 / 2)
 }
 
-penalty <- function(par, data, mult = c(0, 0), pen_log_sigma = NULL) {
+mv_penalty <- function(par, data, mult = c(0, 0), pen_log_sigma = NULL) {
   X <- data$X
   Y <- data$Y
   M <- data$M
   grouping <- data$grouping
   npar <- length(par)
   p <- ncol(X)
-  q <- max(ncol(data$Z),1)
-  beta <- par[seq.int(p)]
+  q <- max(ncol(data$Z), 1)
+  beta <- par[1:p]
   par_re <- par[(p + 1):npar]
-  fetas <- drop(X%*%beta)
+  fetas <- drop(X %*% beta)
   probs <- plogis(fetas)
   w <- M * probs * (1 - probs)
   pen <- mult[1] * log(det(crossprod(X * sqrt(w)))) / 2 # a multiple of jeffreys
@@ -96,20 +61,21 @@ penalty <- function(par, data, mult = c(0, 0), pen_log_sigma = NULL) {
   pen
 }
 
-glmm_fit <- function(start, data,
-                     mult = NULL,
+mv_glmm_fit <- function(start, data,
+                     mult = c(0, 0),
                      nAGQ = 1,
                      pen_log_sigma = NULL, ...) {
+  ## starting vals are in working parameterization: c(beta,L_tilde), L_tilde is lower triangular cholesky of sigma with log-transform of diagonal entries 
+  ## null multiplier means we get default multiplier
   if (is.null(mult)) {
-    mult <- rep(multiplier(data), 2)
+    mult <- rep(mv_multiplier(data), 2)
   }
-  penalize <- all(mult == 0)
-  lfun <- infer_loglik(data, nAGQ = nAGQ)
+  lfun <- mv_infer_loglik(data, nAGQ = nAGQ)
   obj <- function(pars) {
-    pen <- penalty(pars, data,
+    pen <- mv_penalty(pars, data,
                    mult = mult,
                    pen_log_sigma = pen_log_sigma)
-    -loglik(pars, data, nAGQ = nAGQ, lfun = lfun) - pen
+    -mv_loglik(pars, data, nAGQ = nAGQ, lfun = lfun) - pen
   }
   out <- optimx(par = start,
                 fn = obj,
@@ -124,16 +90,16 @@ glmm_fit <- function(start, data,
   out
 }
 
-multiplier <- function(data) {
-  n <- nrow(data$X) 
-  p <- ncol(data$X) 
-  return(2*sqrt(p/n))
+mv_multiplier <- function(data) {
+  n <- nrow(data$X)
+  p <- ncol(data$X)
+  return(2 * sqrt(p / n))
 }
 
-get_glmer <- function(start = NULL, data, nAGQ = 100, method_name = NULL) {
-  p <- ncol(data$X) 
-  q <- max(ncol(data$Z),1)
-  npar = p + 0.5*q*(q+1)
+mv_get_glmer <- function(start = NULL, data, nAGQ = 1, method_name = NULL) {
+  p <- ncol(data$X)
+  q <- max(ncol(data$Z), 1)
+  npar <- p + 0.5 * q * (q + 1)
   data$quadtable <- NULL
   out <- try({
     if (is.null(start)) {
@@ -141,23 +107,25 @@ get_glmer <- function(start = NULL, data, nAGQ = 100, method_name = NULL) {
                    family = binomial(), nAGQ = nAGQ)
     }
     else {
-      fixef = start[1:p]
-      theta = start[(p+1):npar]
-      inds <- vapply(1:q,function(i){2+(q+2)*(i-1)-i*(i+1)/2},1)
+      ## Start value parameterization: c(beta,L_tilde),
+      ## where L_tilde: lower triangular entries of lower Cholesky factor of sigma, diag is in logs 
+      fixef <- start[1:p]
+      theta <- start[(p + 1):npar]
+      inds <- vapply(1:q, function(i) {2 + (q + 2) * (i - 1) - i * (i + 1) / 2}, 1)
       theta[inds] <- exp(theta[inds])
-      
+      start_vals <- list(theta = theta, fixef = fixef)
       mod <- glmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
-                   family = binomial(), nAGQ = nAGQ, start = start)
+                   family = binomial(), nAGQ = nAGQ, start = start_vals)
     }
-    cfe <- pars_n2w(mod@beta,mod@theta,q)
-    bd <- sqrtdiaginv(mod@optinfo$derivs$Hessian/2)
+    cfe <- pars_n2w(mod@beta, mod@theta, q)
+    bd <- sqrtdiaginv(mod@optinfo$derivs$Hessian / 2)
     grad <- mod@optinfo$derivs$grad
     ## Get deviance for unpenalized model to compute standard errors
     dfun <- glmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
                   family = binomial, nAGQ = nAGQ, devFunOnly = TRUE)
     ## Change to logsigma parameterization and fixef first
-    nll <- function(par) dfun(pars_w2n(par,p,q)) / 2
-    sfe <- sqrtdiaginv(hessian(nll, cfe))
+    nll <- function(par) dfun(pars_w2n(par, p, q)) / 2
+    sfe <- sqrtdiaginv(numDeriv::hessian(nll, cfe))
   }, silent = TRUE)
   if (is(out, "try-error")) {
     grad <- bd <- cfe <- sfe <- rep(NA, npar)
@@ -193,15 +161,15 @@ hess <- function(object, best = TRUE) {
   }
 }
 
-get_MSPAL <- function(start, data, nAGQ = 1,
+mv_get_MSPAL <- function(start, data, nAGQ = 1,
                       mult = NULL, pen_log_sigma = NULL,
                       optimization_methods = c("BFGS", "CG"),
-                      method_suffix = "", method_name = NULL,...) {
-  p <- ncol(data$X) 
-  q <- max(ncol(data$Z),1)
-  npar <- p+0.5*q*(q+1)
+                      method_suffix = "", method_name = NULL, ...) {
+  p <- ncol(data$X)
+  q <- max(ncol(data$Z), 1)
+  npar <- p + 0.5 * q * (q + 1)
   out <- try({
-    fit0 <- glmm_fit(start,
+    fit0 <- mv_glmm_fit(start,
                      data = data, nAGQ = nAGQ,
                      method = optimization_methods,
                      mult = mult,
@@ -217,7 +185,7 @@ get_MSPAL <- function(start, data, nAGQ = 1,
     grad <- bd <- cfe <- sfe <- rep(NA, npar)
   }
   if (is.null(method_name)) {
-    method_name <- paste0("MSPAL_", method_suffix, "[", paste(format_dec(mult, 1), collapse =","), "]")
+    method_name <- paste0("MSPAL_", method_suffix, "[", paste(format_dec(mult, 1), collapse = ","), "]")
   }
   out <- data.frame(estimate = cfe,
                     se =  sfe,
@@ -245,7 +213,7 @@ info <- function(object, best = TRUE) {
   nAGQ <- attr(object, "nAGQ")
   lfun <- attr(object, "lfun")
   info_fun <- function(x) {
-    -hessian(loglik, x, data = data, nAGQ = nAGQ, lfun = lfun)
+    -numDeriv::hessian(mv_loglik, x, data = data, nAGQ = nAGQ, lfun = lfun)
   }
   if (best) {
     info_fun(coef(object, best = TRUE))
@@ -278,12 +246,11 @@ boundary_diagnostics <- function(object, best = TRUE) {
 
 format_dec <- function(x, k) format(round(x, k), trim = TRUE, nsmall = k)
 
-get_bglmer <- function(start = NULL, data, nAGQ = 20,
+mv_get_bglmer <- function(start = NULL, data, nAGQ = 1,
                        c_prior, f_prior, method_name = NULL) {
   p <- ncol(data$X)
-  q <- max(ncol(data$Z),1) 
-  npar <-  p + 0.5*q*(q+1)
-  data$quadtable <- NULL
+  q <- max(ncol(data$Z), 1)
+  npar <-  p + 0.5 * q * (q + 1)
   out <- try({
     if (is.null(start)) {
       mod <- bglmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
@@ -291,26 +258,25 @@ get_bglmer <- function(start = NULL, data, nAGQ = 20,
                     cov.prior = c_prior, fixef.prior = f_prior)
     }
     else {
-      ## start is a vector in log parameterization
-      fixef = start[1:p]
-      theta = start[(p+1):npar]
-      inds <- vapply(1:q,function(i){2+(q+2)*(i-1)-i*(i+1)/2},1)
-      theta[inds] <- exp(theta[inds]) 
-      
+       ## starting vals are in working parameterization: c(beta,L_tilde), L_tilde is lower triangular cholesky of sigma with log-transform of diagonal entries 
+      fixef <- start[1:p]
+      theta <- start[(p + 1):npar]
+      inds <- vapply(1:q, function(i) {2 + (q + 2) * (i - 1) - i * (i + 1) / 2}, 1)
+      theta[inds] <- exp(theta[inds])
       start <- list(fixef = fixef, theta = theta)
       mod <- bglmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
                     family = binomial, nAGQ = nAGQ, start = start,
                     cov.prior = c_prior, fixef.prior = f_prior)
     }
-    cfe <- pars_n2w(mod@beta,mod@theta,q)
-    bd <- sqrtdiaginv(mod@optinfo$derivs$Hessian/2)
+    cfe <- pars_n2w(mod@beta, mod@theta, q)
+    bd <- sqrtdiaginv(mod@optinfo$derivs$Hessian / 2)
     grad <- mod@optinfo$derivs$grad
     ## Get deviance for unpenalized model to compute standard errors
     dfun <- glmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
                   family = binomial, nAGQ = nAGQ, devFunOnly = TRUE)
     ## Change to logsigma parameterization and fixef first
-    nll <- function(pars) dfun(pars_w2n(pars,p,q)) / 2
-    sfe <- sqrtdiaginv(hessian(nll, cfe))
+    nll <- function(pars) dfun(pars_w2n(pars, p, q)) / 2
+    sfe <- sqrtdiaginv(numDeriv::hessian(nll, cfe))
   }, silent = FALSE)
   if (is(out, "try-error")) {
     grad <- bd <- cfe <- sfe <- rep(NA, npar)
@@ -346,7 +312,7 @@ report_res <- function(out, digits = 2) {
 getSummary.get_results_output <- function(x) {
   coefs <- x[, "estimate"]
   ses <- x[, "se"]
-  stat <- coefs/ses
+  stat <- coefs / ses
   p <- 2 * pnorm(abs(stat), lower.tail = FALSE)
   cc <- cbind(coefs, ses, stat, p)
   colnames(cc) <- c("est", "se", "stat", "p")
@@ -357,21 +323,19 @@ getSummary.get_results_output <- function(x) {
 getSummary.glmm_fit <- function(x) {
   coefs <- coef(x)
   ses <- se(x)
-  stat <- coefs/ses
+  stat <- coefs / ses
   p <- 2 * pnorm(abs(stat), lower.tail = FALSE)
   cc <- cbind(coefs, ses, stat, p)
   colnames(cc) <- c("est", "se", "stat", "p")
-  rownames(cc) <- c(colnames(attr(x, "data")$X), ind_mat(max(ncol(data$X),1)))
+  rownames(cc) <- c(colnames(attr(x, "data")$X), ind_mat(max(ncol(attr(x, "data")$Z), 1)))
   list(coef = cc, call = attr(x, "call"))
 }
 
-
 ## Functions for simulation experiments
 
-simufun <- function(par, data, nsimu, seed = NULL) {
+mv_simufun <- function(par, data, nsimu, seed = NULL) {
   # par takes logl parameterization of sigma
   X <- data$X
-  Y <- data$Y
   M <- data$M
   Z <- data$Z
   grouping <- data$grouping
@@ -386,27 +350,28 @@ simufun <- function(par, data, nsimu, seed = NULL) {
     on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
   }
   p <- ncol(X)
-  q <- max(ncol(Z),1)
-  npar = p+0.5*q*(q+1)
+  q <- max(ncol(Z), 1)
+  npar <- p + 0.5 * q * (q + 1)
   n <- nrow(X)
   ## Number of groups
-  ng <- length(unique(grouping)) 
-  beta <- par[seq.int(p)]
-  if(q>1){
-    sigma <- matrix(0,nrow=q,ncol=q)
-    sigma[lower.tri(sigma,diag = TRUE)] <- par[(p+1):npar]
-    diag(sigma) <- exp(diag(sigma)) 
+  ng <- length(unique(grouping))
+  beta <- par[1:p]
+  if (q > 1) {
+    sigma <- matrix(0, nrow = q, ncol = q)
+    sigma[lower.tri(sigma, diag = TRUE)] <- par[(p + 1):npar]
+    diag(sigma) <- exp(diag(sigma))
     sigma <- tcrossprod(sigma)
-    reff <- vapply(1:nsimu,function(i,ng,sigma,Z,grouping){u <- MASS::mvrnorm(ng,rep(0,q),sigma);return(rowSums(Z*u[as.numeric(grouping),]))},rep(1,n),ng=ng,sigma=sigma,Z=Z,grouping=grouping)
+    reff <- vapply(1:nsimu, function(i, ng, sigma, Z, grouping) {u <- MASS::mvrnorm(ng, rep(0, q), sigma);
+        return(rowSums(Z * u[as.numeric(grouping), ]))}, rep(1, n),ng = ng, sigma = sigma, Z = Z, grouping = grouping)
   }else{
-    sigma <- exp(par[(p+1)])
-    reff <- matrix(rnorm(ng*nsimu, 0, sigma), nrow = ng)
-    reff <- reff[as.numeric(grouping),]
+    sigma <- exp(par[(p + 1)])
+    reff <- matrix(rnorm(ng * nsimu, 0, sigma), nrow = ng)
+    reff <- reff[as.numeric(grouping), ]
   }
-  fetas <- drop(X%*%beta)
+  fetas <- drop(X %*% beta)
   etas <- fetas + reff
   probs <- plogis(etas)
-  if(nsimu>1){
+  if (nsimu > 1) {
     val <- apply(probs, 2, function(prob) rbinom(n, M, prob))
   }else{
     val <- rbinom(n, M, probs)
@@ -414,46 +379,46 @@ simufun <- function(par, data, nsimu, seed = NULL) {
   val
 }
 
-fit_all_methods <- function(startl, data, s, trace = TRUE, nAGQ = 1, optimization_methods, c_prior=NULL) {
+mv_fit_all_methods <- function(startl, data, s, trace = TRUE, nAGQ = 1, optimization_methods, c_prior=NULL) {
   for (st in startl) {
-    res_mal <- get_MSPAL(start = st, data = data, nAGQ = nAGQ,
+    res_mal <- mv_get_MSPAL(start = st, data = data, nAGQ = nAGQ,
                          mult = c(0, 0),
                          optimization_methods = optimization_methods,
-                         method_name = "MAL")
+                         method_name = "ML")
     if (isTRUE(all(abs(res_mal$grad) < 1e-03))) break
   }
   startl <- c(list(res_mal$estimate), startl)
   for (st in startl) {
-    res_mspal <- get_MSPAL(start = st, data = data, nAGQ = nAGQ,
-                           pen_log_sigma = function(x) sum(nHuber(x, 1)), ##linear_LR(x, -0.001, 0.001, 1, 0),
+    res_mspal <- mv_get_MSPAL(start = st, data = data, nAGQ = nAGQ,
+                           pen_log_sigma = function(x) sum(nHuber(x, 1)),
                            optimization_methods = optimization_methods,
-                           method_name = "MSPAL")
+                           method_name = "MSPL")
     if (isTRUE(all(abs(res_mspal$grad) < 1e-03))) break
   }
   startl <- c(list(res_mspal$estimate), startl)
   for (st in startl) {
-    if(is.null(c_prior)){
-      res_bglmer_t <- get_bglmer(start = st, data = data,  nAGQ = nAGQ,
+    if (is.null(c_prior)) {
+      res_bglmer_t <- mv_get_bglmer(start = st, data = data,  nAGQ = nAGQ,
                                  c_prior = bquote(wishart), f_prior = bquote(t),
-                                 method_name = "bglmer(t)")
+                                 method_name = "bglmer[t]")
     }else{
-      res_bglmer_t <- get_bglmer(start = st, data = data,  nAGQ = nAGQ,
+      res_bglmer_t <- mv_get_bglmer(start = st, data = data,  nAGQ = nAGQ,
                                  c_prior = c_prior, f_prior = bquote(t),
-                                 method_name = "bglmer(t)")
+                                 method_name = "bglmer[t]")
     }
     
     if (isTRUE(all(abs(res_bglmer_t$grad) < 1e-03))) break
   }
   startl <- c(list(res_bglmer_t$estimate), startl)
   for (st in startl) {
-    if(is.null(c_prior)){
-      res_bglmer_n <- get_bglmer(start = res_bglmer_t$estimate, data = data, nAGQ = nAGQ,
+    if (is.null(c_prior)) {
+      res_bglmer_n <- mv_get_bglmer(start = st, data = data, nAGQ = nAGQ,
                                  c_prior = bquote(wishart), f_prior = bquote(normal),
-                                 method_name = "bglmer(n)")
+                                 method_name = "bglmer[n]")
     }else{
-      res_bglmer_n <- get_bglmer(start = res_bglmer_t$estimate, data = data, nAGQ = nAGQ,
+      res_bglmer_n <- mv_get_bglmer(start = st, data = data, nAGQ = nAGQ,
                                  c_prior = c_prior, f_prior = bquote(normal),
-                                 method_name = "bglmer(n)")
+                                 method_name = "bglmer[n]")
     }
     if (isTRUE(all(abs(res_bglmer_n$grad) < 1e-03))) break
   }
@@ -471,14 +436,14 @@ fit_all_methods <- function(startl, data, s, trace = TRUE, nAGQ = 1, optimizatio
         res_mspal)
 }
 
-perform_experiment <- function(truth, data,
+mv_perform_experiment <- function(truth, data,
                                nsimu = 100, seed = NULL,
                                alt_start = rep(0, length(truth)), nAGQ = 1,
                                optimization_methods = c("BFGS", "CG"),
-                               ncores = 8,
+                               ncores = 4,
                                mathpar = NULL,
                                c_prior = NULL) {
-  registerDoMC(7)
+  registerDoMC(ncores)
   if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
     runif(1)
   if (is.null(seed))
@@ -489,10 +454,10 @@ perform_experiment <- function(truth, data,
     RNGstate <- structure(seed, kind = as.list(RNGkind()))
     on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
   }
-  simulated_data <- simufun(truth, data = data, nsimu = nsimu)
+  simulated_data <- mv_simufun(truth, data = data, nsimu = nsimu)
   base_startl <- list(truth, alt_start)
   out <- mclapply(1:nsimu, function(j) {
-    res <- fit_all_methods(startl = base_startl,
+    res <- mv_fit_all_methods(startl = base_startl,
                            data = within(data, Y <- simulated_data[, j]),
                            s = j,
                            trace = TRUE,
@@ -502,19 +467,19 @@ perform_experiment <- function(truth, data,
     res$sample <- j
     res
   }, mc.cores = ncores)
-  # out <- lapply(1:nsimu, function(j) {
-  #   res <- fit_all_methods(startl = base_startl,
-  #                          data = within(data, Y <- simulated_data[, j]),
-  #                          s = j,
-  #                          trace = TRUE,
-  #                          optimization_methods = optimization_methods,
-  #                          nAGQ = nAGQ)
-  #   res$sample <- j
-  #   res
-  # })
+   #out <- lapply(1:nsimu, function(j) {
+   #  res <- mv_fit_all_methods(startl = base_startl,
+   #                         data = within(data, Y <- simulated_data[, j]),
+   #                         s = j,
+   #                         trace = TRUE,
+   #                         optimization_methods = optimization_methods,
+   #                         nAGQ = nAGQ)
+   #  res$sample <- j
+   #  res
+   #})
   out <- do.call("rbind", out)
   out$true <- truth
-  parnames <- c(colnames(data$X), ind_mat(max(ncol(data$Z),1)))
+  parnames <- c(colnames(data$X), ind_mat(max(ncol(data$Z), 1)))
   if (is.null(mathpar)) {
     mathpar <- parnames
     out$mathpar <- mathpar
@@ -522,18 +487,17 @@ perform_experiment <- function(truth, data,
   else {
     names(mathpar) <- parnames
     out$mathpar <-  dplyr::recode(out$parameter, !!!mathpar)
-    
   }
   out$mathpar <- factor(out$mathpar, levels = rev(mathpar),
                         ordered = TRUE)
   out$parameter <- factor(out$parameter, levels = rev(parnames),
                           ordered = TRUE)
-  out$method <- factor(out$method, levels = rev(c("MAL", "bglmer(n)", "bglmer(t)", "MSPAL")),
+  out$method <- factor(out$method, levels = rev(c("ML", "bglmer[n]", "bglmer[t]", "MSPL")),
                        ordered = TRUE)
   out
 }
 
-summarize_experiment <- function(out, se_threshold = 40, grad_threshold = 1e-03,
+mv_summarize_experiment <- function(out, se_threshold = 40, grad_threshold = 1e-03,
                                  estimate_threshold = 50) {
   ## Exclusion
   out <- within(out, estimate[(se > se_threshold) |
@@ -558,14 +522,12 @@ summarize_experiment <- function(out, se_threshold = 40, grad_threshold = 1e-03,
       cmax = max(estimate - true, na.rm = TRUE))
 }
 
-
-
-plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10),
+mv_plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10),
                             max_var = 10, max_abs_bias = 3, ...) {
-  if (is.null(out_summary)) out_summary <- summarize_experiment(out, ...)
+  if (is.null(out_summary)) out_summary <- mv_summarize_experiment(out, ...)
   ## Summary plots
   stats <- c("nused", "bias", "var", "mse", "pu", "cover95")
-  xlabs <- c("Estimates used", "Bias", "Variance", "MSE", "PU", "Coverage 95% Wald")
+  xlabs <- c("R", "Bias", "Variance", "MSE", "PU", "Coverage")
   plots <- as.list(numeric(length(stats)))
   names(xlabs) <- names(plots) <- stats
   for (stat in stats) {
@@ -577,7 +539,8 @@ plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10),
       theme_minimal() +
       theme(legend.position = "none") +
       scale_y_discrete(labels = label_parse()) +
-      scale_color_grey(start = 0.1, end = 0.8) + scale_fill_grey(start = 0.2, end = 0.9)
+      scale_color_grey(start = 0.1, end = 0.8) +
+      scale_fill_grey(start = 0.2, end = 0.9)
     if (stat %in% c("nused", "var", "mse", "pu", "cover95"))
       plots[[stat]] <- plots[[stat]] +
         theme(axis.title.y = element_blank(),
@@ -606,158 +569,239 @@ plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10),
       plots[[stat]] <- plots[[stat]] +
         geom_vline(aes(xintercept = ntried),
                    lty = 2, alpha = 0.7) +
-        scale_x_continuous(breaks = ntried/5 * (0:5),
-                           labels = as.character(seq(0, ntried, length = 6)))
+        scale_x_continuous(breaks = ntried / 5 * (0:5),
+                           labels = c("0", paste0(seq(0, ntried / 1000, length = 6), "K")[-1])) +
+                theme(axis.text.x = element_text(angle = 45))
     }
   }
   ## boxplots
   bpp <- ggplot(out) +
-    geom_boxplot(aes(y = mathpar, x = estimate - truth, colour = method, fill = method), alpha = 0.5) +
+    geom_boxplot(aes(y = mathpar, x = estimate - true, colour = method, fill = method), alpha = 0.5,
+                     outlier.alpha = 0.1, outlier.size = 0.3) +
     geom_vline(aes(xintercept = 0), lty = 2, alpha = 0.7) +
     coord_cartesian(x = xlims)  +
     theme_minimal() +
-    theme(legend.position = "top") +
+    theme(legend.position = "bottom") +
     labs(x = NULL, y = NULL, title = "Centred distributions") +
     scale_y_discrete(labels = label_parse()) +
-    scale_color_grey(start = 0.1, end = 0.8) + scale_fill_grey(start = 0.2, end = 0.9)
+    scale_color_grey(start = 0.1, end = 0.8) +
+    scale_fill_grey(start = 0.2, end = 0.9)
   ## patchwork
   ((bpp + plots[[1]] + plot_layout(widths = c(4, 1))) /
       (Reduce("+", plots[-1]) + plot_layout(ncol = length(stats) - 1)))
 }
 
-boxplot_simul <- function(dat,par_ind=3,exclude=FALSE,ylims=c(-30,30),xlab=NULL,ylab=NULL,truelab=NULL,
-                          se_threshold=40, estimate_threshold=50, grad_threshold=1e-3,x_breaks=1,centered=TRUE){
-  if(exclude){
-    simul_dat <- within(dat, estimate[(se > se_threshold) |
-                                        (abs(grad) > grad_threshold) |
-                                        abs(estimate) > estimate_threshold] <- NA)
-    split_list <- split(simul_dat,simul_dat$method)
+mv_boxplot_simul <- function(dat,
+                            par_ind = 3,
+                            exclude = FALSE,
+                            ylims = c(-30, 30),
+                            xlab = NULL,
+                            ylab = NULL,
+                            truelab = NULL,
+                            se_threshold = 40,
+                            estimate_threshold = 50,
+                            grad_threshold = 1e-3,
+                            x_breaks = 1,
+                            centered = TRUE) {
+  if (exclude) {
+    simul_dat <- within(dat,
+      estimate[(se > se_threshold) |
+      (abs(grad) > grad_threshold) |
+      abs(estimate) > estimate_threshold] <- NA)
+    split_list <- split(simul_dat, simul_dat$method)
   }else{
-    split_list <- split(dat,dat$method)
+    split_list <- split(dat, dat$method)
   }
   methods <- names(split_list)
   plot_list <- list()
   scaleFUN <- function(x) sprintf("%.1f", as.numeric(x))
-  every_nth = function(n) {
-    return(function(x) {x[c(TRUE, rep(FALSE, n - 1))]})
+  every_nth <- function(n) {
+    return(function(x) x[c(TRUE, rep(FALSE, n - 1))])
   }
-  for(i in 1:length(split_list)){
+  for (i in seq_len(length(split_list))) {
     dat <- split_list[[i]]
-    dat_select <- dat %>% group_by(n,lambda) %>% slice(seq(par_ind, n(), by = length(unique(parameter)))) %>% dplyr::select(estimate,n,lambda)
-    if(centered){
-      df <- data.frame(lambda=factor(round(dat_select$lambda,digits=2)),estimate=dat_select$estimate-dat_select$lambda,n=factor(dat_select$n),lambdas=dat_select$lambda)
+    dat_select <- dat %>%
+      group_by(n, lambda) %>%
+        slice(seq(par_ind, n(), by = length(unique(parameter)))) %>%
+          dplyr::select(estimate, n, lambda)
+    if (centered) {
+      df <- data.frame(lambda = factor(round(dat_select$lambda, digits = 2)),
+                      estimate = dat_select$estimate - dat_select$lambda,
+                      n = factor(dat_select$n),
+                      lambdas = dat_select$lambda)
     }else{
-      df <- data.frame(lambda=factor(round(dat_select$lambda,digits=2)),estimate=dat_select$estimate,n=factor(dat_select$n),lambdas=dat_select$lambda)
+      df <- data.frame(lambda = factor(round(dat_select$lambda, digits = 2)),
+                      estimate = dat_select$estimate,
+                      n = factor(dat_select$n),
+                      lambdas = dat_select$lambda)
     }
-    
-    
-    bp <- ggplot(df, aes(x=lambda, y=estimate,fill=n)) + 
-      geom_boxplot()+
+    bp <- ggplot(df, aes(x = lambda, y = estimate, fill = n)) +
+      geom_boxplot() +
       theme_minimal() +
-      scale_color_manual(values = "black", name=truelab, labels="", position = "bottom")+
+      scale_color_manual(values = "black",
+      name = truelab, labels = "",
+      position = "bottom") +
       scale_fill_grey(start = 0.5, end = 1) +
-      labs(title=methods[i],x = xlab, y=ylab )+ 
+      labs(title = methods[i], x = xlab, y = ylab) +
       theme(plot.title = element_text(hjust = 0.5)) +
-      guides(fill=guide_legend(override.aes = list(size=.5),order=1))+ 
-      scale_x_discrete(labels=scaleFUN,breaks=every_nth(n=x_breaks)) + 
+      guides(fill = guide_legend(override.aes = list(size = .5), order = 1)) +
+      scale_x_discrete(labels = scaleFUN, breaks = every_nth(n = x_breaks)) +
       coord_cartesian(ylim = ylims)
-    if(!centered){
-      bp <- bp + geom_line(data=df,mapping=aes(x=lambda,y=lambdas,group=1,col="black")) + 
+    if (!centered) {
+      bp <- bp +
+      geom_line(data = df,
+                mapping = aes(x = lambda, y = lambdas, group = 1, col = "black")) +
         geom_point(data = df,
-                   aes(x=lambda, y=lambdas, col = "black"),
-                   size=2.5,shape=23,show.legend = TRUE) 
-      
+                   aes(x = lambda, y = lambdas, col = "black"),
+                   size = 2.5, shape = 23, show.legend = TRUE)
     }else{
-      bp <- bp + geom_hline(yintercept=0, linetype="dashed", color = "black",size=1)
+      bp <- bp + geom_hline(yintercept = 0, linetype = "dashed", color = "black", size = 1)
     }
-    plot_list[[i]] <- bp  
+    plot_list[[i]] <- bp
   }
-  ((plot_list[[1]] + plot_list[[4]]) / (plot_list[[2]] + plot_list[[3]]) ) + plot_layout(guides = "collect")  
+  ((plot_list[[1]] + plot_list[[4]]) / (plot_list[[2]] + plot_list[[3]]))+ plot_layout(guides = "collect")
 }
 
-simul_table <- function(dat,par_ind=3,se_threshold=40, estimate_threshold=50, grad_threshold=1e-3,log_estimate_lower_threshold = log(1e-2),log_mask=NULL){
+mv_simul_table <- function(dat,
+  par_ind = 3,
+  se_threshold = 40,
+  estimate_threshold = 50,
+  grad_threshold = 1e-3,
+  log_estimate_lower_threshold = log(1e-2),
+  log_mask = NULL) {
   out <- dat
-  out$method <- ordered(out$method,unique(levels(out$method))[c(1,4,2,3)])
-  if(!is.null(log_mask)){
-    log_mask <- rep(log_mask,nrow(out)/length(log_mask))
+  out$method <- ordered(out$method, unique(levels(out$method))[c(1, 4, 2, 3)])
+  if (!is.null(log_mask)) {
+    log_mask <- rep(log_mask, nrow(out) / length(log_mask))
   }else{
-    log_mask <- rep(FALSE,nrow(out)) 
+    log_mask <- rep(FALSE, nrow(out))
   }
   out$log_mask <- log_mask
-  inds <-  which( (out$se > se_threshold) |
-                    (abs(out$grad) > grad_threshold) |
-                    ( (abs(out$estimate) >estimate_threshold ) & !out$log_mask ) |
-                    ( (out$estimate > log(estimate_threshold)) & out$log_mask) | 
-                    ( (out$estimate < log_estimate_lower_threshold) & out$log_mask) )
+  inds <-  which((out$se > se_threshold) |
+              (abs(out$grad) > grad_threshold) |
+              ((abs(out$estimate) > estimate_threshold) & !out$log_mask) |
+              ((out$estimate > log(estimate_threshold)) & out$log_mask) |
+              ((out$estimate < log_estimate_lower_threshold) & out$log_mask))
   out$estimate[inds] <- NA
   table_dat <- out %>%
-    group_by(method,n,lambda) %>%  slice(seq(par_ind, n(), by = length(unique(parameter)))) %>% dplyr::select(estimate,n,lambda) %>%
+    group_by(method, n, lambda) %>%
+    slice(seq(par_ind, n(), by = length(unique(parameter)))) %>%
+    dplyr::select(estimate, n, lambda) %>%
     summarize(
       nused = sum(!is.na(estimate)),
       ntried = length(estimate),
-      perc_not_used = (1 - nused / ntried) * 100 )
-  
-  table_dat <- tidyr::pivot_wider(table_dat,id_cols=1:3,names_from = 3,values_from = 6)
-  
-  steps <- nrow(table_dat)/length(unique(table_dat$method))
-  inds <- rep(FALSE,steps)
-  inds[ceiling(steps/2)] <- TRUE
-  inds <- rep(inds,length(unique(table_dat$method)))
+      perc_not_used = (1 - nused / ntried) * 100) %>%
+      dplyr::select(method, n, lambda, perc_not_used)
+  table_dat <- tidyr::pivot_wider(table_dat,
+    id_cols = 1:2,
+    names_from = 3,
+    values_from = 4)
+  steps <- nrow(table_dat) / length(unique(table_dat$method))
+  inds <- rep(FALSE, steps)
+  inds[ceiling(steps / 2)] <- TRUE
+  inds <- rep(inds, length(unique(table_dat$method)))
   table_dat$method[!inds] <- NA
-  
-  names(table_dat) <- c("","",round(unique(out$lambda),digits=2))
-  table_dat[,2] <- rep(c("n=50","n=100","n=200"),4)
-  table_dat[,3:ncol(table_dat)] <- t(apply(table_dat[,3:ncol(table_dat)],1,function(vec){apply(as.matrix(vec),1,function(entry){if(entry==0){round(entry,digits=0)}else{paste("\\textbf{",round(entry,digits=0),"}",sep="")}})}))
-  print(xtable(table_dat,align = c("l","l","r",rep("c",ncol(table_dat)-2)),digits=2 ),include.rownames = FALSE,sanitize.text.function = function(x){x})
+  names(table_dat) <- c("", "", round(unique(out$lambda), digits = 2))
+  table_dat[, 2] <- rep(c("n=50", "n=100", "n=200"), 4)
+  table_dat[, 3:ncol(table_dat)] <- t(apply(
+    table_dat[, 3:ncol(table_dat)], 1, function(vec) {
+      apply(as.matrix(vec), 1, function(entry) {
+        if (entry == 0) {
+          round(entry, digits = 0)
+        }
+        else{
+          paste("\\textbf{", round(entry, digits = 0), "}", sep = "")
+        }
+      })
+    }))
+  return(xtable(table_dat,
+    align = c("l", "l", "r",
+    rep("c", ncol(table_dat) - 2)),
+    digits = 2))
 }
 
-report_outliers <- function(simul_data,ylims,par_ind){
+mv_report_outliers <- function(simul_data, ylims, par_ind) {
   simul_data %>% group_by(method) %>%    slice(seq(par_ind, n(), by = length(unique(parameter)))) %>% summarize(outliers = sum(estimate>ylims[2] | estimate<ylims[1],na.rm=TRUE),
                                                                                                                 nas = sum(is.na(estimate)) )
 }
 
-percentile_table <- function(simul_dat,p,q,var_only=TRUE,perc=c(0.05,0.10,0.25,0.50,0.75,0.90,0.95),centered=TRUE,se_threshold = 40, grad_threshold = 1e-03,
-                             estimate_threshold = 50){
-  if(is.null(simul_dat$mathpar)){
+mv_percentile_table <- function(simul_dat, p, q, var_only = TRUE,
+    perc = c(0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95),
+    centered = TRUE,
+    se_threshold = 40,
+    grad_threshold = 1e-03,
+    estimate_threshold = 50) {
+  if (is.null(simul_dat$mathpar)) {
     simul_dat$mathpar <- simul_dat$parameter
   }
   simul_dat_clean <- within(simul_dat, estimate[(se > se_threshold) |
-                                                  (abs(grad) > grad_threshold) |
-                                                  abs(estimate) > estimate_threshold] <- NA)
-  npar <- p+0.5*q*(q+1)
-  inds <- c(npar-2,npar-1,npar,1:(npar-3))
-  simul_dat_clean$mathpar <- ordered(simul_dat_clean$mathpar,levels=unique(simul_dat_clean$mathpar)[inds])
-  if(centered){
+                            (abs(grad) > grad_threshold) |
+                            abs(estimate) > estimate_threshold] <- NA)
+  npar <- p + 0.5 * q * (q + 1)
+  if (var_only) {
+    inds <- c(npar - 2, npar - 1, npar, 1:(npar - 3))
+  }else{
+    inds <- c(1:(npar - 3), npar - 2, npar - 1, npar)
+  }
+  simul_dat_clean$mathpar <- ordered(simul_dat_clean$mathpar,
+    levels = unique(simul_dat_clean$mathpar)[inds])
+  if (centered) {
     tab <- simul_dat_clean %>%
-      group_by(method,mathpar,parameter) %>%
-      summarise(percentiles = quantile(estimate-true,perc,na.rm=TRUE) , nused = 1-sum(is.na(estimate))/length(estimate))
+      group_by(method, mathpar, parameter) %>%
+      summarise(percentiles = quantile(estimate - true, perc, na.rm = TRUE),
+      nused = 1 - sum(is.na(estimate)) / length(estimate))
   }else{
     tab <- simul_dat_clean %>%
-      group_by(method,mathpar,true) %>%
-      summarise(percentiles = quantile(estimate,perc,na.rm=TRUE), nused = 1-sum(is.na(estimate))/length(estimate) )
+      group_by(method, mathpar, true) %>%
+      summarise(percentiles = quantile(estimate, perc, na.rm = TRUE),
+      nused = 1 - sum(is.na(estimate)) / length(estimate))
   }
- 
-  tab$perc <- rep(perc,npar*length(unique(tab$method) ) ) 
+  tab$perc <- rep(perc, npar * length(unique(tab$method)))
 
   #nused <- tab$nused[seq.int(from=1,by=length(perc),to = length(tab$nused))]
-  tab <- tidyr::pivot_wider(tab,id_cols=c(method,mathpar), names_from = perc,values_from=percentiles  ) 
+  tab <- tidyr::pivot_wider(tab,
+    id_cols = c(method, mathpar),
+    names_from = perc,
+    values_from = percentiles)
   #tab$nused <- nused
 
-  if(var_only){
-    inds <- rep( c(rep(TRUE,0.5*q*(q+1)),rep(FALSE,p)),length(unique(tab$method)))
-    tab <- tab[ inds,]
+  if (var_only) {
+    inds <- rep(c(rep(TRUE, 0.5 * q * (q + 1)),
+      rep(FALSE, p)),
+      length(unique(tab$method)))
+    tab <- tab[inds, ]
+    par_step <- 0.5 * q * (q + 1)
+  }else{
+    par_step <- p + 0.5 * q * (q + 1)
   }
-  steps <- nrow(tab)/length(unique(tab$method))
-  inds <- rep(FALSE,steps)
-  inds[ceiling(steps/2)] <- TRUE
-  inds <- rep(inds,length(unique(tab$method)))
+  steps <- nrow(tab) / length(unique(tab$method))
+  inds <- rep(FALSE, steps)
+  inds[ceiling(steps / 2)] <- TRUE
+  inds <- rep(inds, length(unique(tab$method)))
   tab$method[!inds] <- NA
-  colnames(tab) <- c("","",colnames(tab)[3:ncol(tab)] ) 
-  tab <- xtable(tab, align = c("l","l","r",rep("c",ncol(tab)-2)),digits=2 )
-  print(tab,include.rownames = FALSE,sanitize.text.function = function(x){x})  
+  colnames(tab) <- c("", "", colnames(tab)[3:ncol(tab)])
+
+
+  addtorow <- list()
+  m_col <- ncol(tab)
+  m_col_w <- ncol(tab) - 2
+  addtorow$pos <- as.list(c(-1, -1, -1, seq.int(from = 0, to = nrow(tab), by = par_step)))
+  addtorow$command <- c("\\toprule \n",
+    paste0("&& \\multicolumn{",m_col_w,"}{c}{Percentiles} \\\\ \\cmidrule{3-", m_col, "} \n", collapse = ""),
+    paste0("&", paste0("&$", 100 * perc, "\\%$", collapse = ""), "\\\\ \\cmidrule{3-", m_col, "} \n", collapse = ""),
+    rep("\\cmidrule{3-9} \n", length(addtorow$pos) - 4),
+    "\\bottomrule \n")
+  print(xtable(tab,
+      digits = 2,
+      align = c("l", "l", "r", rep("c", ncol(tab) - 2))),
+    add.to.row = addtorow,
+    include.colnames = FALSE,
+    include.rownames = FALSE,
+    sanitize.text.function = function(x) x,
+    hline.after = NULL)
 }
 
-re_names_plot <- function(q){
+re_names_plot <- function(q) {
   mat <- matrix(NA,nrow=q,ncol=q) 
   t = rep(NA,0.5*q*(q+1))
   count <- 1
@@ -774,7 +818,18 @@ re_names_plot <- function(q){
   return(t)
 }
 
-make_math <- function(mats,ndigits=2,inline_math=FALSE){
+re_names <- function(q) {
+  mat <- matrix(NA,nrow=q,ncol=q) 
+  for(i in 1:q){
+    for(j in 1:i){
+      mat[i,j] <- paste("l_{",paste(i,j,sep=","),"}",sep="")
+    }
+  }
+  diag(mat) <- vapply(diag(mat),function(entry){paste("\\log ",entry,sep="")},"a")
+  return(paste("$",mat[lower.tri(mat,diag=T)],"$",sep=""))
+}
+
+make_math <- function(mats, ndigits = 2, inline_math = FALSE) {
   mat <- format(round(mats, digits=ndigits), nsmall = ndigits,trim = TRUE)
   for(i in 1:nrow(mat)){
     for(j in 1:ncol(mat)){
@@ -795,16 +850,16 @@ make_math <- function(mats,ndigits=2,inline_math=FALSE){
   mat
 }
 
-bar_plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10), var_only=TRUE , p = NULL, q = NULL, 
+mv_bar_plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10), var_only=TRUE , p = NULL, q = NULL, 
                                 max_var = 10, max_abs_bias = 3, ...) {
-  if (is.null(out_summary)) out_summary <- summarize_experiment(out, ...)
+  if (is.null(out_summary)) out_summary <- mv_summarize_experiment(out, ...)
   if (var_only & !is.null(p) &!is.null(q)){
     inds <- rep( c(rep(TRUE,0.5*q*(q+1)),rep(FALSE,p)),length(unique(out_summary$method)))
     out_summary <- out_summary[inds,]
   }
   ## Summary plots
   stats <- c("nused", "bias", "var", "mse", "pu")
-  xlabs <- c("Estimates used", "Bias", "Variance", "MSE", "PU")
+  xlabs <- c("R", "Bias", "Variance", "MSE", "PU")
   plots <- as.list(numeric(length(stats)))
   names(xlabs) <- names(plots) <- stats
   for (stat in stats) {
@@ -815,7 +870,8 @@ bar_plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10), var
       labs(x = NULL, y = NULL, title = xlabs[stat]) +
       theme_minimal() +
       scale_y_discrete(labels = label_parse()) +
-      scale_color_grey(start = 0.1, end = 0.8) + scale_fill_grey(start = 0.2, end = 0.9)
+      scale_color_grey(start = 0.1, end = 0.8) +
+      scale_fill_grey(start = 0.2, end = 0.9)
     if (stat %in% c("nused", "var", "mse", "pu"))
       plots[[stat]] <- plots[[stat]] +
         theme(axis.title.y = element_blank(),
@@ -839,27 +895,28 @@ bar_plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10), var
       plots[[stat]] <- plots[[stat]] +
         geom_vline(aes(xintercept = ntried),
                    lty = 2, alpha = 0.7) +
-        scale_x_continuous(breaks = c(0,ntried),
-                           labels = as.character(seq(0, ntried, length = 2)))
+        scale_x_continuous(breaks = ntried / 5 * (0:5),
+                           labels = c("0", paste0(seq(0, ntried / 1000, length = 6), "K")[-1])) +
+                theme(axis.text.x = element_text(angle = 45))
     }
   }
   ## patchwork
   (Reduce("+", plots[-1]) +   plots[[1]] + plot_layout(ncol = length(stats),guides = "collect" )) 
 }
 
-plot_experiment_color <- function(out, out_summary = NULL, xlims = c(-10, 10),
+mv_plot_experiment_color <- function(out, out_summary = NULL, xlims = c(-10, 10),
                                   max_var = 10, max_abs_bias = 3, color_palette=NULL,outline=FALSE, ...) {
-  out$method <- factor(out$method,levels=unique(out$method))
-  if (is.null(out_summary)) out_summary <- summarize_experiment(out, ...)
-  ## Colors 
-  if(is.null(color_palette)){
+  out$method <- factor(out$method, levels = unique(out$method))
+  if (is.null(out_summary)) out_summary <- mv_summarize_experiment(out, ...)
+  ## Colors
+  if (is.null(color_palette)) {
     color_palette <- brewer.pal(n = length(unique(out$method)), name = "PuBuGn")
-  }else if(length(color_palette)<length(unique(out$method))){
+  }else if(length(color_palette) < length(unique(out$method))){
     color_palette <- brewer.pal(n = length(unique(out$method)), name = color_palette)
   }
   ## Summary plots
   stats <- c("nused", "bias", "var", "mse", "pu", "cover95")
-  xlabs <- c("Estimates used", "Bias", "Variance", "MSE", "PU", "Coverage 95% Wald")
+  xlabs <- c("R", "Bias", "Variance", "MSE", "PU", "Coverage")
   plots <- as.list(numeric(length(stats)))
   names(xlabs) <- names(plots) <- stats
   for (stat in stats) {
@@ -870,13 +927,13 @@ plot_experiment_color <- function(out, out_summary = NULL, xlims = c(-10, 10),
       labs(x = NULL, y = NULL, title = xlabs[stat]) +
       theme_minimal() +
       theme(legend.position = "none") +
-      scale_y_discrete(labels = label_parse()) + 
-      scale_fill_manual(values=color_palette)
+      scale_y_discrete(labels = label_parse()) +
+      scale_fill_manual(values = color_palette)
     if(outline){
       plots[[stat]] <- plots[[stat]] +
-        scale_color_manual(values=rep("black",length(color_palette)))
+        scale_color_manual(values = rep("black", length(color_palette)))
     }else{
-      plots[[stat]] <- plots[[stat]] + scale_color_manual(values=color_palette)
+      plots[[stat]] <- plots[[stat]] + scale_color_manual(values = color_palette)
     }
     
     #+
@@ -906,20 +963,22 @@ plot_experiment_color <- function(out, out_summary = NULL, xlims = c(-10, 10),
                    lty = 2, alpha = 0.7)
     if (stat == "nused") {
       ntried <- unique(out_summary$ntried)
-      plots[[stat]] <- plots[[stat]] +
-        geom_vline(aes(xintercept = ntried),
-                   lty = 2, alpha = 0.7) +
-        scale_x_continuous(breaks = c(0,ntried),
-                           labels = as.character(c(0,ntried)) ) 
+            plots[[stat]] <- plots[[stat]] +
+                geom_vline(aes(xintercept = ntried),
+                           lty = 2, alpha = 0.7) +
+                scale_x_continuous(breaks = ntried / 5 * (0:5),
+                                   labels = c("0", paste0(seq(0, ntried / 1000, length = 6), "K")[-1])) +
+                theme(axis.text.x = element_text(angle = 45))
     }
   }
   ## boxplots
   bpp <- ggplot(out) +
-    geom_boxplot(aes(y = mathpar, x = estimate - truth, colour = method, fill = method), alpha = 0.5) +
+    geom_boxplot(aes(y = mathpar, x = estimate - truth, colour = method, fill = method), alpha = 0.5, 
+    outlier.alpha = 0.1, outlier.size = 0.3) +
     geom_vline(aes(xintercept = 0), lty = 2, alpha = 0.7) +
     coord_cartesian(x = xlims)  +
     theme_minimal() +
-    theme(legend.position = "top") +
+    theme(legend.position = "bottom") +
     labs(x = NULL, y = NULL, title = "Centred distributions") +
     scale_y_discrete(labels = label_parse()) + 
     scale_fill_manual(values=color_palette) + 
@@ -937,3 +996,72 @@ plot_experiment_color <- function(out, out_summary = NULL, xlims = c(-10, 10),
       (Reduce("+", plots[-1]) + plot_layout(ncol = length(stats) - 1)))
 }
 
+ind_mat <- function(q){
+  if(q>1){
+    mat <- matrix(NA,nrow=q,ncol=q) 
+    for(i in 1:q){
+      for(j in 1:i){
+        mat[i,j] <- paste("l[",paste(i,j,sep=","),"]",sep="")
+      }
+    }
+    
+    diag(mat) <- vapply(diag(mat),function(entry){paste("log(",entry,")",sep="")},"a")
+    return(mat[lower.tri(mat,diag=T)])
+  }else{
+    return("log(sigma)")
+  }
+}
+
+mv_fit_all <- function(start, data, nAGQ = 1, results.only = TRUE) {
+    m_MAL <- mv_glmm_fit(start, mult = c(0, 0), data = data, nAGQ = nAGQ,
+                   method = c("BFGS", "CG"))
+    m_bglmer_t <- mv_get_bglmer(start, data = data, nAGQ = nAGQ,
+                              f_prior = bquote(t), c_prior = bquote(wishart))
+    m_bglmer_n <- mv_get_bglmer(start, data = data, nAGQ = nAGQ,
+                             f_prior = bquote(normal), c_prior = bquote(wishart))
+    m_MSPAL <- mv_get_MSPAL(start, data = data, nAGQ = nAGQ,
+                          pen_log_sigma = function(x) sum(nHuber(x, 1)))
+    return( list(ML = m_MAL, bglmer_t = m_bglmer_t, bglmer_n = m_bglmer_n, MSPL = m_MSPAL) )
+    if (results.only) {
+        return( list(ML = m_MAL, bglmer_t = m_bglmer_t, bglmer_n = m_bglmer_n, MSPL = m_MSPAL) )
+    }else{
+        tab <- memisc::mtable("BFGS" = m_MAL["BFGS", ],  "CG" = m_MAL["CG", ],
+           "BGLMER(t)" = m_bglmer_t, "BGLMER(n)" = m_bglmer_n,
+           "MSPL" = m_MSPAL, digits = 2, #coef.style = "horizontal",
+           signif.symbols = NULL, summary.stats = NULL)
+        print(tab)
+        return( list(mtable = tab, ML = m_MAL, bglmer_t = m_bglmer_t, bglmer_n = m_bglmer_n, MSPL = m_MSPAL) ) 
+    }
+}
+
+mv_make_table <- function(cond_inf_results, p, q, npar) {
+    fe_names <-  rep(NA, p)
+    for (i in 1:p) {
+        if (i == 1) {
+            fe_names[i] <- "$\\beta_0$"
+        }else {
+            fe_names[i] <- paste("$\\beta_", i, "$", sep = "")
+        }
+    }
+
+    re_name <- re_names(q)
+    row_names <-  c(rbind(c(fe_names, re_name), rep(" ", npar)))
+    col_names <- c("ML(BFGS)", "ML(CG)", "bglmer[t]", "bglmer[n]", "MSPL")
+
+    MAL_BFGS_col <-  c(t(getSummary(cond_inf_results$ML["BFGS", ])$coef[, 1:2]))
+    MAL_CG_col <-  c(t(getSummary(cond_inf_results$ML["CG", ])$coef[, 1:2]))
+    bglmer_t_col <-  c(t(getSummary(cond_inf_results$bglmer_t)$coef[, 1:2]))
+    bglmer_n_col <-   c(t(getSummary(cond_inf_results$bglmer_n)$coef[, 1:2]))
+    MSPAL_col <-   c(t(getSummary(cond_inf_results$MSPL)$coef[, 1:2]))
+
+    table_mat <- cbind(MAL_BFGS_col, MAL_CG_col, bglmer_t_col, bglmer_n_col, MSPAL_col)
+    table_mat <- make_math(table_mat, ndigits = 2, inline_math = FALSE)
+
+    table_mat <- cbind(row_names, table_mat)
+    table_mat <- gsub("NaN", "$-$", table_mat)
+    colnames(table_mat) <- c(" ", col_names)
+    xt <- xtable(table_mat,
+                type = "latex",
+                align = c("l", "l", rep("c", 5)))
+    return(xt)
+}
