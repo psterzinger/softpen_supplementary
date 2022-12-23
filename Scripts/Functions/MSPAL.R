@@ -1,5 +1,11 @@
-## Ioannis Kosmidis, 19 Nov 2021
-
+## Distributed as part of the supplementary material for the manuscript
+## "Maximum softly-penalized likelihood for mixed effects logistic regression"
+##
+## Authors: Philipp Sterzinger, Ioannis Kosmidis
+## Date: 1 June 2022
+## Licence: GPL 2 or greater
+## NOT A POLISHED PIECE OF PUBLIC-USE SOFTWARE! Provided "as is".
+## NO WARRANTY OF FITNESS FOR ANY PURPOSE!
 infer_loglik <- function(data, nAGQ = 100) {
     data$quadtable <- NULL
     p <- ncol(data$X)
@@ -26,8 +32,8 @@ scores <- function(par, data, nAGQ, lfun) {
 linear_LR <- function(x, c, d, e, centering = 0) {
     x <- x - centering
     ifelse(x <= c, - e * c * x + e * c^2 / 2,
-    ifelse(x >= d, - e * d * x + e * d^2 / 2,
-           - e * x^2 / 2))
+           ifelse(x >= d, - e * d * x + e * d^2 / 2,
+                  - e * x^2 / 2))
 }
 
 nHuber <- function(x, a) {
@@ -247,7 +253,7 @@ get_glmer <- function(start = NULL, data, nAGQ = 100, method_name = NULL) {
 
 ## starting values only for theta
 get_bglmer <- function(start = NULL, data, nAGQ = 20,
-                             c_prior, f_prior, method_name = NULL) {
+                       c_prior, f_prior, method_name = NULL) {
     pp <- ncol(data$X) + 1
     data$quadtable <- NULL
     out <- try({
@@ -417,11 +423,11 @@ perform_experiment <- function(truth, data,
     base_startl <- list(truth, alt_start)
     out <- mclapply(1:nsimu, function(j) {
         res <- fit_all_methods(startl = base_startl,
-                        data = within(dat, Y <- simulated_data[, j]),
-                        s = j,
-                        trace = TRUE,
-                        optimization_methods = optimization_methods,
-                        nAGQ = nAGQ)
+                               data = within(dat, Y <- simulated_data[, j]),
+                               s = j,
+                               trace = TRUE,
+                               optimization_methods = optimization_methods,
+                               nAGQ = nAGQ)
         res$sample <- j
         res
     }, mc.cores = ncores)
@@ -449,8 +455,8 @@ summarize_experiment <- function(out, se_threshold = 40, grad_threshold = 1e-03,
                                  estimate_threshold = 50) {
     ## Exlusion
     out <- within(out, estimate[(se > se_threshold) |
-                                (abs(grad) > grad_threshold) |
-                                abs(estimate) > estimate_threshold] <- NA)
+                                    (abs(grad) > grad_threshold) |
+                                    abs(estimate) > estimate_threshold] <- NA)
     out %>%
         group_by(method, parameter, mathpar) %>%
         summarize(
@@ -535,5 +541,5 @@ plot_experiment <- function(out, out_summary = NULL, xlims = c(-10, 10),
         scale_fill_grey(start = 0.2, end = 0.9)
     ## patchwork
     ((bpp + plots[[1]] + plot_layout(widths = c(4, 1))) /
-     (Reduce("+", plots[-1]) + plot_layout(ncol = length(stats) - 1)))
+            (Reduce("+", plots[-1]) + plot_layout(ncol = length(stats) - 1)))
 }
