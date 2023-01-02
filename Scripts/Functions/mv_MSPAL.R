@@ -6,7 +6,6 @@
 ## Licence: GPL 2 or greater
 ## NOT A POLISHED PIECE OF PUBLIC-USE SOFTWARE! Provided "as is".
 ## NO WARRANTY OF FITNESS FOR ANY PURPOSE!
-
 mv_loglik <- function(par, data, nAGQ = 1, lfun = NULL) {
   ## glmer parameterization: c(L,beta), L: lower triangular cholesky factor of sigma
   if (is.null(lfun))
@@ -127,8 +126,9 @@ mv_get_glmer <- function(start = NULL, data, nAGQ = 1, method_name = NULL) {
                    family = binomial(), nAGQ = nAGQ, start = start_vals)
     }
     cfe <- pars_n2w(mod@beta, mod@theta, q)
-    bd <- sqrtdiaginv(mod@optinfo$derivs$Hessian / 2)
-    grad <- mod@optinfo$derivs$grad
+    bd_diagnostics <- transform_bd_grad(mod,p,q) 
+    bd <- bd_diagnostics$bd
+    grad <- bd_diagnostics$grad
     ## Get deviance for unpenalized model to compute standard errors
     dfun <- glmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
                   family = binomial, nAGQ = nAGQ, devFunOnly = TRUE)
@@ -168,6 +168,35 @@ hess <- function(object, best = TRUE) {
   else {
     if (best) details[, "nhatend"][[1]] else details[, "nhatend"]
   }
+}
+
+transform_bd_grad <- function(mod,p,q){
+  nrep <- q*(q+1)/2
+  npar <- nrep + p
+  
+  H <- mod@optinfo$derivs$Hessian/2
+  grad <- mod@optinfo$derivs$gradient/2
+  
+  ## get grad/hessian wrt log transformed pars 
+  log_sigma_inds <- vapply(1:q, function(i) {2 + (q + 2) * (i - 1) - i * (i + 1) / 2}, 1)
+  grad[log_sigma_inds] <- grad[log_sigma_inds] *  mod@theta[log_sigma_inds]
+  
+  H[,log_sigma_inds] <-  H[,log_sigma_inds] *  mod@theta[log_sigma_inds]
+  H[log_sigma_inds,] <-  H[log_sigma_inds,] *  mod@theta[log_sigma_inds]
+  H[cbind(log_sigma_inds,log_sigma_inds)] <- H[cbind(log_sigma_inds,log_sigma_inds)] + grad[log_sigma_inds]
+  
+  
+  
+  ## reorder hessian grad from c(RE,FE) to c(FE,RE) 
+  grad_reorder <- c(grad[(nrep+1):npar],grad[1:nrep])
+  
+  H_reorder <- H
+  H_reorder[1:p,1:p] <- H[(nrep+1):npar,(nrep+1):npar]
+  H_reorder[(p+1):npar,(p+1):npar] <- H[1:nrep,1:nrep]
+  H_reorder[1:p,(p+1):npar] <- H[(nrep+1):npar,1:nrep]
+  H_reorder[(p+1):npar,1:p] <- H[1:nrep,(nrep+1):npar]
+  
+  return(list(bd = sqrtdiaginv(H_reorder), grad = grad_reorder))
 }
 
 mv_get_MSPAL <- function(start, data, nAGQ = 1,
@@ -278,8 +307,9 @@ mv_get_bglmer <- function(start = NULL, data, nAGQ = 1,
                     cov.prior = c_prior, fixef.prior = f_prior)
     }
     cfe <- pars_n2w(mod@beta, mod@theta, q)
-    bd <- sqrtdiaginv(mod@optinfo$derivs$Hessian / 2)
-    grad <- mod@optinfo$derivs$grad
+    bd_diagnostics <- transform_bd_grad(mod,p,q) 
+    bd <- bd_diagnostics$bd
+    grad <- bd_diagnostics$grad
     ## Get deviance for unpenalized model to compute standard errors
     dfun <- glmer(Y ~ -1 + X + (-1 + Z | grouping), weights = M, data = data,
                   family = binomial, nAGQ = nAGQ, devFunOnly = TRUE)
