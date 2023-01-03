@@ -740,7 +740,7 @@ mv_simul_table <- function(dat,
   inds[ceiling(steps / 2)] <- TRUE
   inds <- rep(inds, length(unique(table_dat$method)))
   table_dat$method[!inds] <- NA
-  names(table_dat) <- c("", "", round(unique(out$lambda), digits = 2))
+  names(table_dat) <- c(" ", " ", round(unique(out$lambda), digits = 2))
   table_dat[, 2] <- rep(c("n=50", "n=100", "n=200"), 4)
   table_dat[, 3:ncol(table_dat)] <- t(apply(
     table_dat[, 3:ncol(table_dat)], 1, function(vec) {

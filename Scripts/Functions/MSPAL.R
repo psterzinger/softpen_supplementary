@@ -256,7 +256,7 @@ get_glmer <- function(start = NULL, data, nAGQ = 100, method_name = NULL) {
                          family = binomial(), nAGQ = nAGQ, start = start)
         }
         cfe <- c(mod@beta, log(mod@theta))
-        bd_diagnostics <- transform_bd_grad(mod,pp,1) 
+        bd_diagnostics <- transform_bd_grad(mod,pp-1,1) 
         bd <- bd_diagnostics$bd
         grad <- bd_diagnostics$grad
         ## Get deviance for unpenalized model to compute standard errors
@@ -299,7 +299,7 @@ get_bglmer <- function(start = NULL, data, nAGQ = 20,
                           cov.prior = c_prior, fixef.prior = f_prior)
         }
         cfe <- c(mod@beta, log(mod@theta))
-        bd_diagnostics <- transform_bd_grad(mod,pp,1) 
+        bd_diagnostics <- transform_bd_grad(mod,pp-1,1) 
         bd <- bd_diagnostics$bd
         grad <- bd_diagnostics$grad
         ## Get deviance for unpenalized model to compute standard errors

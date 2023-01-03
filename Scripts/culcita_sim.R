@@ -2,20 +2,22 @@
 ## "Maximum softly-penalized likelihood for mixed effects logistic regression"
 ##
 ## Authors: Philipp Sterzinger, Ioannis Kosmidis
-## Date: 1 June 2022
+## Date: 2 January 2022
 ## Licence: GPL 2 or greater
 ## NOT A POLISHED PIECE OF PUBLIC-USE SOFTWARE! Provided "as is".
 ## NO WARRANTY OF FITNESS FOR ANY PURPOSE!
-library(numDeriv)
-library(lme4)
-library(blme)
-library(optimx)
-library(dplyr)
-library(parallel)
-library(doMC)
-library(ggplot2)
-library(patchwork)
-library(scales)
+local({r <- getOption("repos")
+       r["CRAN"] <- "http://cran.r-project.org"
+       options(repos=r)})
+
+pckg <- c("numDeriv", "lme4", "blme", "optimx", "dplyr", "parallel", "doMC", "ggplot2", "patchwork", "scales") 
+
+for (i in seq_len(length(pckg))) {
+  if (!is.element(pckg[i], installed.packages()[, 1]))
+    install.packages(pckg[i], dep = TRUE)
+  require(pckg[i], character.only = TRUE)
+}
+update.packages(ask = FALSE) 
 
 functions_path <- "./Functions"
 data_path <- "../Data"
@@ -43,6 +45,8 @@ fit <- glmm_fit(c(0, 0, 0, 0, 0), mult = c(0, 0), data = dat,
 
 truth <- drop(coef(fit))
 
+sim_culcita_log <- file(file.path(results_path,"sim_culcita_log.txt"))
+tryCatch({
 out <- perform_experiment(truth = truth,
                           data = dat,
                           nsimu = 10000,
@@ -50,7 +54,7 @@ out <- perform_experiment(truth = truth,
                           alt_start = rep(0, length(truth)),
                           nAGQ = nAGQ,
                           optimization_methods = c("L-BFGS-B", "nlminb"),
-                          ncores = 10,
+                          ncores = 48,
                           mathpar = c("beta[0]",
                           "beta[1]",
                           "beta[2]",
@@ -68,7 +72,7 @@ out_summary <- summarize_experiment(out,
 out$method <- ordered(
   rep(c("ML", "bglmer[n]", "bglmer[t]", "MSPL"), each = 5),
   levels = c("MSPL", "bglmer[t]", "bglmer[n]", "ML"))
-pdf("../../Documents/Figures/simulation_results.pdf", width = 8, height = 7)
+pdf(file.path(figures_path,"Fig1.pdf"), width = 8, height = 7)
 plot_experiment(out,
                 estimate_threshold = estimate_threshold,
                 se_threshold = se_threshold,
@@ -86,3 +90,8 @@ out %>%
 
 
 save.image(file.path(results_path, "simulation_study_example1.rda"))
+
+}, error = function(e) {
+  writeLines(as.character(e), sim_culcita_log)
+})
+close(sim_culcita_log)

@@ -2,22 +2,35 @@
 ## "Maximum softly-penalized likelihood for mixed effects logistic regression"
 ##
 ## Authors: Philipp Sterzinger, Ioannis Kosmidis
-## Date: 1 June 2022
+## Date: 2 January 2022
 ## Licence: GPL 2 or greater
 ## NOT A POLISHED PIECE OF PUBLIC-USE SOFTWARE! Provided "as is".
 ## NO WARRANTY OF FITNESS FOR ANY PURPOSE!
-library(lme4)
-library(optimx)
-library(numDeriv)
-library(blme)
-library(xtable)
-library(dotwhisker)
-library(patchwork)
-library(scales)
-library(cowplot)
-library(dplyr)
-library(doMC)
-library(memisc)
+local({r <- getOption("repos")
+       r["CRAN"] <- "http://cran.r-project.org"
+       options(repos=r)})
+
+pckg <- c("lme4",
+	"optimx",
+	"numDeriv",
+	"blme",
+	"xtable",
+	"dotwhisker",
+	"patchwork",
+	"scales",
+	"cowplot",
+	"dplyr",
+	"doMC",
+	"memisc",
+	"ggplot2",
+	"parallel") 
+
+for (i in seq_len(length(pckg))) {
+  if (!is.element(pckg[i], installed.packages()[, 1]))
+    install.packages(pckg[i], dep = TRUE)
+  require(pckg[i], character.only = TRUE)
+}
+update.packages(ask = FALSE) 
 
 functions_path <- "./Functions"
 data_path <- "../Data"
@@ -49,13 +62,13 @@ tab <- mv_make_table(cond_inf_results, p, q, npar)
 print(tab,
     sanitize.text.function = function(x) x,
     include.rownames = FALSE,
-    #file = file.path(results_path,"cond_inf_table.tex"),
+    file = file.path(results_path,"cond_inf_table.tex"),
     compress = FALSE,
     only.contents = TRUE,
     comment = FALSE)
 
 # simulation
-truth <- cond_inf_results$MSPAL$estimate
+truth <- cond_inf_results$MSPL$estimate
 fe_names <-  rep(NA, p)
 for (i in 1:p) {
   if (i == 1) {
@@ -66,16 +79,24 @@ for (i in 1:p) {
 }
 re_names_p <- re_names_plot(q)
 mathpar <- c(fe_names, re_names_p)
-simul <-  mv_perform_experiment(truth = truth,
-                            data = data,
-                            nsimu = 10,
-                            seed = 0,
-                            mathpar = mathpar)
 
-#saveRDS(simul, file.path(results_path, "cond_inf_sim10000.Rds"))
+sim_cond_inf_log <- file(file.path(results_path,"sim_cond_inf_log.txt"))
+tryCatch({
+simul_data <-  mv_perform_experiment(truth = truth,
+                            data = data,
+                            nsimu = 10000,
+                            seed = 0,
+                            mathpar = mathpar, 
+                            ncores = 48)
+
+saveRDS(simul, file.path(results_path, "cond_inf_sim10000.Rds"))
+}, error = function(e) {
+  writeLines(as.character(e), sim_cond_inf_log)
+})
+close(sim_2_log)
 
 ## simulation analysis
-simul_data <- readRDS(file.path(results_path, "cond_inf_sim10000.Rds"))
+#simul_data <- readRDS(file.path(results_path, "cond_inf_sim10000.Rds"))
 fe_names <-  rep(NA, p)
     for (i in 1:p) {
         if (i == 1) {
@@ -91,20 +112,25 @@ sim$method <- ordered(
 re_name <- re_names(q)
 sim$mathpar <- c(fe_names, re_name)
 
+sink(file=file.path(results_path,"perc_table.tex"))
 mv_percentile_table(sim, 8, 2)
+sink()
+
 simul_data$method <- ordered(
   rep(c("ML", "bglmer[n]", "bglmer[t]", "MSPL"), each = npar),
   levels = c("MSPL", "bglmer[t]", "bglmer[n]", "ML"))
 
-pdf(file.path(figures_path, "cond_inf_simul.pdf"), width = 10, height = 5)
+pdf(file.path(figures_path, "Fig2.pdf"), width = 10, height = 5)
   mv_bar_plot_experiment(simul_data, p = 8, q = 2)
 dev.off()
 
 ### Full data
-pdf(file.path(figures_path, "cond_inf_simul.pdf"), width = 10, height = 5)
+pdf(file.path(figures_path, "Fig3.pdf"), width = 10, height = 5)
   mv_bar_plot_experiment(simul_data, p = 8, q = 2, var_only = FALSE)
 dev.off()
+sink(file=file.path(results_path,"perc_table_full.tex"))
 mv_percentile_table(sim, p = 8, q = 2, var_only = FALSE)
+sink()
 
 if (FALSE) {
   fe_names <-  rep(NA, p)
@@ -159,3 +185,7 @@ print(xtable(test4, digits = 2),
     hline.after = NULL,
     scalebox = 0.7)
 }
+
+seshinfo <- file(file.path(results_path,"seshinfo.tex"))
+writeLines(toLatex(sessionInfo()), seshinfo)
+close(seshinfo)
