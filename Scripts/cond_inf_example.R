@@ -32,6 +32,8 @@ for (i in seq_len(length(pckg))) {
 }
 update.packages(ask = FALSE) 
 
+ncores <- as.numeric(Sys.getenv("NCORES"))
+
 functions_path <- "./Functions"
 data_path <- "../Data"
 results_path <- "../Results"
@@ -84,16 +86,16 @@ sim_cond_inf_log <- file(file.path(results_path,"sim_cond_inf_log.txt"))
 tryCatch({
 simul_data <-  mv_perform_experiment(truth = truth,
                             data = data,
-                            nsimu = 10000,
+                            nsimu = 2,
                             seed = 0,
                             mathpar = mathpar, 
-                            ncores = 48)
+                            ncores = ncores)
 
-saveRDS(simul, file.path(results_path, "cond_inf_sim10000.Rds"))
+saveRDS(simul_data, file.path(results_path, "cond_inf_sim10000.Rds"))
 }, error = function(e) {
   writeLines(as.character(e), sim_cond_inf_log)
 })
-close(sim_2_log)
+close(sim_cond_inf_log)
 
 ## simulation analysis
 #simul_data <- readRDS(file.path(results_path, "cond_inf_sim10000.Rds"))
@@ -102,6 +104,7 @@ fe_names <-  rep(NA, p)
         if (i == 1) {
             fe_names[i] <- "$\\beta_0$"
         }else {
+
             fe_names[i] <- paste("$\\beta_", i, "$", sep = "")
         }
     }

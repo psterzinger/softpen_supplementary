@@ -27,6 +27,8 @@ figures_path <- results_path
 source(file.path(functions_path, "MSPAL.R"))
 load(file.path(data_path, "culcita.RData"))
 
+ncores <- as.numeric(Sys.getenv("NCORES"))
+
 ## Parameterization
 estimate_threshold <- 30
 se_threshold <- 30
@@ -49,12 +51,12 @@ sim_culcita_log <- file(file.path(results_path,"sim_culcita_log.txt"))
 tryCatch({
 out <- perform_experiment(truth = truth,
                           data = dat,
-                          nsimu = 10000,
+                          nsimu = 2,
                           seed = 123,
                           alt_start = rep(0, length(truth)),
                           nAGQ = nAGQ,
                           optimization_methods = c("L-BFGS-B", "nlminb"),
-                          ncores = 48,
+                          ncores = ncores,
                           mathpar = c("beta[0]",
                           "beta[1]",
                           "beta[2]",
@@ -72,6 +74,7 @@ out_summary <- summarize_experiment(out,
 out$method <- ordered(
   rep(c("ML", "bglmer[n]", "bglmer[t]", "MSPL"), each = 5),
   levels = c("MSPL", "bglmer[t]", "bglmer[n]", "ML"))
+
 pdf(file.path(figures_path,"Fig1.pdf"), width = 8, height = 7)
 plot_experiment(out,
                 estimate_threshold = estimate_threshold,
@@ -80,6 +83,7 @@ plot_experiment(out,
                 xlims = c(-11, 11))
 dev.off()
 
+sink(file=file.path(results_path,"culcita_mean_failed.txt"))
 out %>%
         group_by(method, sample) %>%
         summarize(failed = any(is.na(estimate) |
@@ -87,7 +91,7 @@ out %>%
         isTRUE(se > se_threshold) |
         isTRUE(abs(grad) > grad_threshold))) %>%
             summarize(mean(failed))
-
+sink()
 
 save.image(file.path(results_path, "simulation_study_example1.rda"))
 

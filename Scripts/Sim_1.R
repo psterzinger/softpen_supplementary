@@ -10,7 +10,7 @@ local({r <- getOption("repos")
        r["CRAN"] <- "http://cran.r-project.org"
        options(repos=r)})
 
-pckg <- c("blme","lme4","doMC","parallel","numDeriv","patchwork","ggplot2","grid","xtable")
+pckg <- c("blme","lme4","doMC","parallel","numDeriv","patchwork","ggplot2","grid","xtable","dplyr","optimx")
 
 for (i in seq_len(length(pckg))) {
   if (!is.element(pckg[i], installed.packages()[, 1]))
@@ -25,6 +25,8 @@ results_path <- "../Results"
 figures_path <- results_path
 
 source(file.path(functions_path, "mv_MSPAL.R"))
+
+ncores <- as.numeric(Sys.getenv("NCORES"))
 
 sim_1_log <- file(file.path(results_path,"sim_1_log.txt"))
 tryCatch({
@@ -60,7 +62,7 @@ for (i in seq_len(length(ns))) {
   }else{
     alt_start <- simul_list[[i - 1]] %>%
       group_by(method, parameter) %>%
-      filter(lambda == lmin & method == "MSPAL") %>%
+      filter(lambda == lmin & method == "MSPL") %>%
       summarise(mean_par = mean(estimate, na.rm = TRUE)) %>%
       dplyr::select(mean_par)
     alt_start <- rev(unlist(alt_start[, 2], use.names = FALSE))
@@ -72,19 +74,19 @@ for (i in seq_len(length(ns))) {
       alt_start <- out %>%
         group_by(method, parameter) %>%
         summarise(mean_par = mean(estimate, na.rm = TRUE)) %>%
-        filter(method == "MSPAL") %>%
+        filter(method == "MSPL") %>%
         dplyr::select(mean_par)
       alt_start <- rev(unlist(alt_start[, 2], use.names = FALSE))
     }
     out <- mv_perform_experiment(truth = par,
                                  data = data,
-                                 nsimu = B,
+                                 nsimu = 2,
                                  nAGQ = 20,
                                  c_prior = "gamma",
                                  seed = i + j,
                                  alt_start = alt_start,
                                  optimization_methods = c("CG", "nlminb","nlm", "BFGS", "L-BFGS-B"), 
-                                 ncores = 48)
+                                 ncores = ncores)
     out$lambda <- lambdas[j]
     out_list <- rbind(out_list, out)
   }

@@ -10,7 +10,7 @@ local({r <- getOption("repos")
        r["CRAN"] <- "http://cran.r-project.org"
        options(repos=r)})
 
-pckg <- c("blme","lme4","doMC","parallel","numDeriv","patchwork","ggplot2","grid","xtable")
+pckg <- c("blme","lme4","doMC","parallel","numDeriv","patchwork","ggplot2","grid","xtable","dplyr","optimx")
 
 for (i in seq_len(length(pckg))) {
   if (!is.element(pckg[i], installed.packages()[, 1]))
@@ -25,6 +25,8 @@ results_path <- "../Results"
 figures_path <- results_path
 
 source(file.path(functions_path, "mv_MSPAL.R"))
+
+ncores <- as.numeric(Sys.getenv("NCORES"))
 
 ### Simulation 2
 sim_2_log <- file(file.path(results_path,"sim_2_log.txt"))
@@ -63,7 +65,7 @@ tryCatch({
     }else{
       alt_start <- simul_list[[i - 1]] %>%
         group_by(method, parameter) %>%
-        filter(lambda == smin & method == "MSPAL") %>%
+        filter(lambda == smin & method == "MSPL") %>%
         summarise(mean_par = mean(estimate, na.rm = TRUE)) %>%
         dplyr::select(mean_par)
       alt_start <- rev(unlist(alt_start[, 2], use.names = FALSE))
@@ -75,19 +77,19 @@ tryCatch({
         alt_start <- out %>%
           group_by(method, parameter) %>%
           summarise(mean_par = mean(estimate, na.rm = TRUE)) %>%
-          filter(method == "MSPAL") %>%
+          filter(method == "MSPL") %>%
           dplyr::select(mean_par)
         alt_start <- rev(unlist(alt_start[, 2], use.names = FALSE))
       }
       out <- mv_perform_experiment(truth = par,
                                    data = data,
-                                   nsimu = B,
+                                   nsimu = 2,
                                    nAGQ = 20,
                                    c_prior = "gamma",
                                    seed = i + j,
                                    alt_start = alt_start,
                                    optimization_methods = c("CG", "nlminb","nlm", "BFGS", "L-BFGS-B"), 
-                                   ncores = 48)
+                                   ncores = ncores)
       out$lambda <- lambdas[j]
       out_list <- rbind(out_list, out)
     }
@@ -106,6 +108,7 @@ simul_data <- simul
 xlab <- expression(lambda)
 ylab <- expression(widehat(log(sigma)))
 truelab <- expression(log(sigma))
+ylims <- c(-20, 20)
 sim <- simul_data
 sim$method <- ordered(
   rep(c("ML", "bglmer[n]", "bglmer[t]", "MSPL"), each = 6),
